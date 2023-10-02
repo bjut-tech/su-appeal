@@ -29,6 +29,12 @@ bucket4j:
       hide-http-response-headers: false
       url: .*
       rate-limits:
+        - execute-predicates:
+            - "PATH=/token"
+          bandwidths:
+            - capacity: 10
+              time: 5
+              unit: minutes
         - cache-key: "@securityService.username()?: getRemoteAddr()"
           execute-predicates:
             - "PATH=/attachments"
