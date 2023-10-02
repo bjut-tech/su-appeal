@@ -1,0 +1,58 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+  jpa:
+    generate-ddl: true
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
+    open-in-view: false
+  cache:
+    type: jcache
+    jcache:
+      config: classpath:ehcache.xml
+bucket4j:
+  enabled: true
+  filters:
+    - cache-name: buckets
+      filter-method: servlet
+      hide-http-response-headers: false
+      url: .*
+      rate-limits:
+        - cache-key: "@securityService.username()?: getRemoteAddr()"
+          execute-predicates:
+            - "PATH=/attachments"
+            - "METHOD=POST"
+          bandwidths:
+            - capacity: 10
+              time: 1
+              unit: minutes
+        - cache-key: "@securityService.username()?: getRemoteAddr()"
+          execute-predicates:
+            - "PATH=/questions"
+            - "METHOD=POST"
+          skip-condition: "@securityService.hasAuthority('ADMIN')"
+          bandwidths:
+            - capacity: 10
+              time: 1
+              unit: minutes
+      metrics:
+        enabled: false
+app:
+  auth:
+    admin:
+      # - "10001"
+    jwt-secret: GYLlSzvzcDQmJF8L3VcZHIBnNVTLNe52 # an insecure default, should be changed in production
+  store:
+    type: local
+    path: /var/lib/bjut-su-appeal/uploads
