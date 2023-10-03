@@ -42,9 +42,8 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))
             .formLogin(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(
-                    new AntPathRequestMatcher("/actuator/**")
-                ).hasRole("ADMIN")
+                .requestMatchers(new AntPathRequestMatcher("/actuator/health")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/actuator/**")).hasRole("ADMIN")
                 .anyRequest().permitAll()
             )
             .exceptionHandling((exceptions) -> exceptions
