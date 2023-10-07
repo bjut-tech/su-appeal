@@ -27,7 +27,7 @@ public class Question {
     @Column(nullable = false, length = 65535)
     private String content;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable
     private List<Attachment> attachments;
 

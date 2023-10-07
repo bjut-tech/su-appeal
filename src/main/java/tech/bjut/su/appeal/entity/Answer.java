@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -27,11 +28,12 @@ public class Answer {
     @Column(nullable = false, length = 65535)
     private String content;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable
     private List<Attachment> attachments;
 
     @OneToOne(mappedBy = "answer", optional = false, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Question question;
 
     @CreationTimestamp

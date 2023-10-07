@@ -6,14 +6,13 @@ import tech.bjut.su.appeal.entity.User;
 import tech.bjut.su.appeal.enums.UserRoleEnum;
 import tech.bjut.su.appeal.repository.UserRepository;
 
-import java.util.Base64;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class UserService {
 
-    private final List<String> adminList;
+    private final Set<String> adminList;
 
     private final UserRepository repository;
 
@@ -22,7 +21,6 @@ public class UserService {
         UserRepository repository
     ) {
         this.adminList = properties.getAuth().getAdmin();
-        this.adminList.add(new String(Base64.getDecoder().decode("MjIwODAyMDY=")));
         this.repository = repository;
     }
 

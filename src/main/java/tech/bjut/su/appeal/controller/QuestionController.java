@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import tech.bjut.su.appeal.dto.QuestionCreateDTO;
+import tech.bjut.su.appeal.dto.QuestionCreateDto;
 import tech.bjut.su.appeal.entity.Question;
 import tech.bjut.su.appeal.service.QuestionService;
 
@@ -20,7 +20,7 @@ public class QuestionController {
     }
 
     @PostMapping("")
-    public Question store(@Valid @RequestBody QuestionCreateDTO dto) {
+    public Question store(@Valid @RequestBody QuestionCreateDto dto) {
         return service.create(dto);
     }
 }

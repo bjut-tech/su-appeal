@@ -8,7 +8,6 @@ import org.springframework.web.multipart.MultipartFile;
 import tech.bjut.su.appeal.config.AppProperties;
 import tech.bjut.su.appeal.entity.Attachment;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
-import tech.bjut.su.appeal.util.DirectorySize;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -64,13 +63,5 @@ public class AttachmentService {
 
     public Attachment store(Attachment attachment) {
         return repository.saveAndFlush(attachment);
-    }
-
-    public long getUsedSpace() {
-        return DirectorySize.getUsed(storePath.toFile());
-    }
-
-    public long getTotalSpace() {
-        return DirectorySize.getTotal(storePath.toFile());
     }
 }

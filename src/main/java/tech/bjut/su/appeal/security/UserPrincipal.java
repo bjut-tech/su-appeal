@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.security;
 
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,6 +9,7 @@ import tech.bjut.su.appeal.entity.User;
 import java.util.ArrayList;
 import java.util.Collection;
 
+@Getter
 public class UserPrincipal implements UserDetails {
     private final User user;
 

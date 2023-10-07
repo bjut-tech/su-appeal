@@ -2,7 +2,28 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      cache:
+        time-to-live: 10s
+    info:
+      cache:
+        time-to-live: 1h
+  health:
+    diskspace:
+      enabled: false
+  info:
+    build:
+      enabled: true
+    git:
+      enabled: false
+  metrics:
+    system:
+      diskspace:
+        paths: ${app.store.path}
 spring:
   datasource:
     hikari:
@@ -21,12 +42,20 @@ spring:
     type: jcache
     jcache:
       config: classpath:ehcache.xml
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 101MB
 bucket4j:
   enabled: true
   filters:
     - cache-name: buckets
       filter-method: servlet
       hide-http-response-headers: false
+      http-response-headers:
+        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        "Access-Control-Allow-Headers": "Authorization, Content-Type"
       url: .*
       rate-limits:
         - execute-predicates:

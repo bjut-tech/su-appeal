@@ -7,10 +7,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import tech.bjut.su.appeal.dto.TokenResponseDto;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Map;
 
 public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
@@ -38,11 +38,9 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
 
         Jwt jwt = this.encoder.encode(JwtEncoderParameters.from(header, claims));
 
-        Map<String, String> jsonResponse = Map.of(
-            "access_token", jwt.getTokenValue(),
-            "expires_in", String.valueOf(expiry),
-            "token_type", "Bearer"
-        );
+        TokenResponseDto jsonResponse = new TokenResponseDto();
+        jsonResponse.setAccessToken(jwt.getTokenValue());
+        jsonResponse.setExpiresIn(expiry);
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");

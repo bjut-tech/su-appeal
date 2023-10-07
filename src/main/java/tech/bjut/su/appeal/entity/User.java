@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -34,9 +35,11 @@ public class User {
     private boolean admin = false;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.DETACH)
+    @JsonIgnore
     private List<Question> questions;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.DETACH)
+    @JsonIgnore
     private List<Answer> answers;
 
     @CreationTimestamp

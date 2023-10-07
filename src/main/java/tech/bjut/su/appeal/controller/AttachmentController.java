@@ -1,14 +1,21 @@
 package tech.bjut.su.appeal.controller;
 
+import org.apache.tika.Tika;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import tech.bjut.su.appeal.entity.Attachment;
 import tech.bjut.su.appeal.service.AttachmentService;
+import tech.bjut.su.appeal.service.SecurityService;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -18,8 +25,14 @@ public class AttachmentController {
 
     private final AttachmentService service;
 
-    public AttachmentController(AttachmentService service) {
+    private final SecurityService securityService;
+
+    public AttachmentController(
+        AttachmentService service,
+        SecurityService securityService
+    ) {
         this.service = service;
+        this.securityService = securityService;
     }
 
     @PostMapping("")
@@ -27,6 +40,26 @@ public class AttachmentController {
         @RequestParam("file") MultipartFile file,
         @RequestParam("name") String name
     ) {
+        if (!securityService.hasAuthority("ADMIN")) {
+            if (file.getSize() > 1024 * 1024 * 10) {
+                throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY, "file too large");
+            }
+
+            try {
+                InputStream stream = file.getInputStream();
+                Tika tika = new Tika();
+                String type = tika.detect(stream, file.getOriginalFilename());
+
+                if (!type.startsWith("image/")) {
+                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "file type not allowed");
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (file.getSize() > 1024 * 1024 * 100) {
+            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY, "file too large");
+        }
+
         if (name == null || name.isEmpty()) {
             name = file.getOriginalFilename();
         }
