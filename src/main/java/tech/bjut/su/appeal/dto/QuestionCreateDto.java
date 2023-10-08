@@ -11,6 +11,17 @@ import java.util.UUID;
 public class QuestionCreateDto {
 
     @NotBlank
+    @Size(max = 16)
+    private String uid;
+
+    @Size(max = 255)
+    private String name;
+
+    @NotBlank
+    @Size(max = 255)
+    private String contact;
+
+    @NotBlank
     @Size(max = 65535)
     private String content;
 

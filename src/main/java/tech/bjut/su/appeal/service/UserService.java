@@ -34,8 +34,8 @@ public class UserService {
         return user;
     }
 
-    public User findOrCreate(String uid) {
-        return findOrCreate(uid, Map.of());
+    public User findOrCreate(String uid, String name) {
+        return findOrCreate(uid, Map.of("name", name));
     }
 
     public User findOrCreate(String uid, Map<String, String> attributes) {

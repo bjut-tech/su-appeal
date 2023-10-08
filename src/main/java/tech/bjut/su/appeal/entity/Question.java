@@ -24,6 +24,8 @@ public class Question {
     @ManyToOne
     private User user;
 
+    private String contact;
+
     @Column(nullable = false, length = 65535)
     private String content;
 

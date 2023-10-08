@@ -1,5 +1,9 @@
 package tech.bjut.su.appeal.service;
 
+import org.springframework.data.domain.KeysetScrollPosition;
+import org.springframework.data.domain.ScrollPosition;
+import org.springframework.data.domain.Window;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import tech.bjut.su.appeal.dto.AnnouncementCreateDto;
 import tech.bjut.su.appeal.entity.Announcement;
@@ -9,6 +13,7 @@ import tech.bjut.su.appeal.repository.AnnouncementRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AnnouncementService {
@@ -23,6 +28,17 @@ public class AnnouncementService {
     ) {
         this.repository = repository;
         this.attachmentRepository = attachmentRepository;
+    }
+
+    public Window<Announcement> getPaginated(@Nullable String cursor) {
+        KeysetScrollPosition position;
+        if (cursor == null) {
+            position = ScrollPosition.keyset();
+        } else {
+            position = ScrollPosition.of(Map.of("id", cursor), ScrollPosition.Direction.FORWARD);
+        }
+
+        return repository.findFirst10ByOrderByIdDesc(position);
     }
 
     public Announcement create(User user, AnnouncementCreateDto dto) {

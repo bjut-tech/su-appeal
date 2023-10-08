@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
 import tech.bjut.su.appeal.entity.Attachment;
 import tech.bjut.su.appeal.entity.Question;
+import tech.bjut.su.appeal.entity.User;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
 
@@ -23,8 +24,10 @@ public class QuestionService {
         this.attachmentRepository = attachmentRepository;
     }
 
-    public Question create(QuestionCreateDto dto) {
+    public Question create(User user, QuestionCreateDto dto) {
         Question question = new Question();
+        question.setUser(user);
+        question.setContact(dto.getContact());
         question.setContent(dto.getContent());
 
         if (dto.getAttachmentIds() != null && !dto.getAttachmentIds().isEmpty()) {

@@ -7,5 +7,5 @@ import tech.bjut.su.appeal.entity.Announcement;
 
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
 
-    Window<Announcement> findFirst10OrderByIdDesc(KeysetScrollPosition position);
+    Window<Announcement> findFirst10ByOrderByIdDesc(KeysetScrollPosition position);
 }

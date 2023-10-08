@@ -58,4 +58,13 @@ public class UserPrincipal implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof UserPrincipal)) {
+            return false;
+        }
+
+        return ((UserPrincipal) obj).getUser().equals(this.getUser());
+    }
 }
