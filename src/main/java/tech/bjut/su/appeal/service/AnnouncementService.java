@@ -58,4 +58,12 @@ public class AnnouncementService {
     public Announcement store(Announcement announcement) {
         return repository.saveAndFlush(announcement);
     }
+
+    public void delete(long id) {
+        repository.deleteById(id);
+    }
+
+    public void delete(Announcement announcement) {
+        repository.delete(announcement);
+    }
 }

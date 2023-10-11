@@ -60,4 +60,10 @@ public class AnnouncementController {
 
         return conversionService.convert(announcement, AnnouncementShowDto.class);
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public void destroy(@PathVariable Long id) {
+        service.delete(id);
+    }
 }

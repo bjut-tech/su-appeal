@@ -16,6 +16,8 @@ import tech.bjut.su.appeal.service.SecurityService;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -71,9 +73,10 @@ public class AttachmentController {
     @GetMapping("/{id}")
     public ResponseEntity<Resource> download(@PathVariable("id") UUID id) {
         Attachment attachment = service.get(id);
+        String filenameEncoded = URLEncoder.encode(attachment.getName(), StandardCharsets.UTF_8);
 
         return ResponseEntity.ok()
-            .header("Content-Disposition", "attachment; filename=\"" + attachment.getName() + "\"")
+            .header("Content-Disposition", "attachment; filename=\"" + filenameEncoded + "\"")
             .contentLength(attachment.getSize())
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic().immutable())
