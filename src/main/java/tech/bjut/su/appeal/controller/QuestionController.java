@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import tech.bjut.su.appeal.dto.CursorPaginationDto;
+import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
 import tech.bjut.su.appeal.entity.Question;
 import tech.bjut.su.appeal.entity.User;
@@ -118,6 +119,39 @@ public class QuestionController {
         }
 
         return service.create(user, dto);
+    }
+
+    @PostMapping("/{id}/answer")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Question answer(
+        @PathVariable Long id,
+        @Valid @RequestBody QuestionAnswerDto dto
+    ) {
+        Question question = service.find(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+        );
+
+        return service.answer(question, securityService.user(), dto);
+    }
+
+    @PostMapping("/{id}/publish")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public void publish(@PathVariable Long id) {
+        Question question = service.find(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+        );
+
+        service.publish(question, true);
+    }
+
+    @PostMapping("/{id}/unpublish")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public void unpublish(@PathVariable Long id) {
+        Question question = service.find(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+        );
+
+        service.publish(question, false);
     }
 
     @DeleteMapping("/{id}")

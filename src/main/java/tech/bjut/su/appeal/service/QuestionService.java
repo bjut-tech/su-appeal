@@ -4,10 +4,14 @@ import org.springframework.data.domain.KeysetScrollPosition;
 import org.springframework.data.domain.Window;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
+import tech.bjut.su.appeal.entity.Answer;
 import tech.bjut.su.appeal.entity.Attachment;
 import tech.bjut.su.appeal.entity.Question;
 import tech.bjut.su.appeal.entity.User;
+import tech.bjut.su.appeal.repository.AnswerRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
 import tech.bjut.su.appeal.util.CursorPagination;
@@ -19,13 +23,17 @@ import java.util.Optional;
 public class QuestionService {
     private final QuestionRepository repository;
 
+    private final AnswerRepository answerRepository;
+
     private final AttachmentRepository attachmentRepository;
 
     public QuestionService(
         QuestionRepository repository,
+        AnswerRepository answerRepository,
         AttachmentRepository attachmentRepository
     ) {
         this.repository = repository;
+        this.answerRepository = answerRepository;
         this.attachmentRepository = attachmentRepository;
     }
 
@@ -67,6 +75,37 @@ public class QuestionService {
         }
 
         return repository.saveAndFlush(question);
+    }
+
+    @Transactional
+    public Question answer(Question question, User user, QuestionAnswerDto dto) {
+        Answer answer;
+        if (question.getAnswer() == null) {
+            answer = new Answer();
+            answer.setQuestion(question);
+        } else {
+            answer = question.getAnswer();
+        }
+
+        answer.setUser(user);
+        answer.setContent(dto.getContent());
+
+        if (dto.getAttachmentIds() != null && !dto.getAttachmentIds().isEmpty()) {
+            List<Attachment> existingAttachments = attachmentRepository.findAllById(dto.getAttachmentIds());
+            answer.setAttachments(existingAttachments);
+        }
+
+        answer = answerRepository.saveAndFlush(answer);
+        if (question.getAnswer() == null) {
+            question.setAnswer(answer);
+        }
+
+        return repository.saveAndFlush(question);
+    }
+
+    public void publish(Question question, boolean published) {
+        question.setPublished(published);
+        repository.saveAndFlush(question);
     }
 
     public void delete(Long id) {

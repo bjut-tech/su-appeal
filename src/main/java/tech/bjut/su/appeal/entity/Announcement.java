@@ -25,7 +25,6 @@ public class Announcement {
     private long id;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn()
     @JsonView(UserViews.Admin.class)
     private User user;
 
