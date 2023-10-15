@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import tech.bjut.su.appeal.entity.Attachment;
@@ -44,7 +43,7 @@ public class AttachmentController {
     ) {
         if (!securityService.hasAuthority("ADMIN")) {
             if (file.getSize() > 1024 * 1024 * 10) {
-                throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY, "file too large");
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "file too large");
             }
 
             try {
@@ -59,7 +58,7 @@ public class AttachmentController {
                 throw new RuntimeException(e);
             }
         } else if (file.getSize() > 1024 * 1024 * 100) {
-            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY, "file too large");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "file too large");
         }
 
         if (name == null || name.isEmpty()) {

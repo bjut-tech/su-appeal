@@ -34,11 +34,6 @@ public class JWTConfig {
 
     @Bean
     JwtEncoder jwtEncoder() {
-        // OctetSequenceKey key = new OctetSequenceKey.Builder(jwtSecret)
-        //     .algorithm(JWSAlgorithm.HS256)
-        //     .build();
-        // JWKSource<SecurityContext> source = new ImmutableJWKSet<>(new JWKSet(key));
-
         JWKSource<SecurityContext> source = new ImmutableSecret<>(jwtSecret);
         return new NimbusJwtEncoder(source);
     }

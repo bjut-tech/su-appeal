@@ -1,5 +1,8 @@
 package tech.bjut.su.appeal.service;
 
+import org.springframework.data.domain.KeysetScrollPosition;
+import org.springframework.data.domain.Window;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
 import tech.bjut.su.appeal.entity.Attachment;
@@ -7,21 +10,49 @@ import tech.bjut.su.appeal.entity.Question;
 import tech.bjut.su.appeal.entity.User;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
+import tech.bjut.su.appeal.util.CursorPagination;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class QuestionService {
-    private final QuestionRepository questionRepository;
+    private final QuestionRepository repository;
 
     private final AttachmentRepository attachmentRepository;
 
     public QuestionService(
-        QuestionRepository questionRepository,
+        QuestionRepository repository,
         AttachmentRepository attachmentRepository
     ) {
-        this.questionRepository = questionRepository;
+        this.repository = repository;
         this.attachmentRepository = attachmentRepository;
+    }
+
+    public Window<Question> getPaginated(@Nullable String cursor) {
+        KeysetScrollPosition position = CursorPagination.positionOf(cursor);
+
+        return repository.findFirst10ByOrderByIdDesc(position);
+    }
+
+    public Window<Question> getPaginated(User user, @Nullable String cursor) {
+        KeysetScrollPosition position = CursorPagination.positionOf(cursor);
+
+        return repository.findFirst10ByUserOrderByIdDesc(user, position);
+    }
+
+    public Window<Question> getPublishedPaginated(@Nullable String cursor) {
+        KeysetScrollPosition position = CursorPagination.positionOf(cursor);
+
+        return repository.findFirst10ByPublishedTrueOrderByIdDesc(position);
+    }
+
+    public Optional<Question> find(Long id) {
+        return repository.findById(id);
+    }
+
+    public Optional<Question> find(User user, Long id) {
+        return repository.findByIdAndUser(id, user);
     }
 
     public Question create(User user, QuestionCreateDto dto) {
@@ -35,10 +66,14 @@ public class QuestionService {
             question.setAttachments(existingAttachments);
         }
 
-        return this.store(question);
+        return repository.saveAndFlush(question);
     }
 
-    public Question store(Question question) {
-        return questionRepository.saveAndFlush(question);
+    public void delete(Long id) {
+        repository.deleteById(id);
+    }
+
+    public void delete(User user, Long id) {
+        repository.deleteByPublishedFalseAndIdAndUser(id, user);
     }
 }

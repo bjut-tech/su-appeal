@@ -1,30 +1,26 @@
 package tech.bjut.su.appeal.dto;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import lombok.Data;
-import org.springframework.data.domain.KeysetScrollPosition;
+import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Window;
 import org.springframework.lang.Nullable;
+import tech.bjut.su.appeal.jsonview.UserViews;
+import tech.bjut.su.appeal.util.CursorPagination;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@JsonView(UserViews.Public.class)
 public class CursorPaginationDto<T> {
 
     private List<T> data;
 
     @Nullable private String cursor;
 
-    public CursorPaginationDto() {}
-
     public CursorPaginationDto(Window<T> pagination) {
         this.data = pagination.getContent();
-        this.setCursorFrom(pagination);
-    }
-
-    public void setCursorFrom(Window<?> pagination) {
-        if (!pagination.isEmpty()) {
-            KeysetScrollPosition position = (KeysetScrollPosition) pagination.positionAt(pagination.getContent().size() - 1);
-            this.cursor = position.getKeys().get("id").toString();
-        }
+        this.cursor = CursorPagination.cursorOf(pagination);
     }
 }
