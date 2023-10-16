@@ -5,6 +5,7 @@ management:
         include:
           - health
           - info
+          - metrics
   endpoint:
     health:
       cache:
@@ -26,6 +27,7 @@ management:
         paths: ${app.store.path}
 spring:
   datasource:
+    driver-class-name: com.mysql.jdbc.Driver
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
@@ -46,6 +48,8 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 101MB
+server:
+  forward-headers-strategy: framework
 bucket4j:
   enabled: true
   filters:

@@ -67,7 +67,8 @@ public class SecurityConfig {
             .formLogin(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(
-                    new AntPathRequestMatcher("/admin/**")
+                    new AntPathRequestMatcher("/admin/**"),
+                    new AntPathRequestMatcher("/actuator/metrics/**")
                 ).hasAuthority("ADMIN")
                 .requestMatchers(
                     new AntPathRequestMatcher("/user/**")

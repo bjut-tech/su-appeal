@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.actuate.metrics.MetricsEndpoint;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,5 +42,10 @@ public class AdminController {
         response.setDiskTotal(metrics.metric("disk.total", null).getMeasurements().get(0).getValue());
 
         return response;
+    }
+
+    @GetMapping("/ip")
+    public String getClientIp(HttpServletRequest request) {
+        return request.getRemoteAddr();
     }
 }
