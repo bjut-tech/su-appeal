@@ -77,6 +77,19 @@ public class QuestionService {
         return repository.saveAndFlush(question);
     }
 
+    public void publish(Question question, boolean published) {
+        question.setPublished(published);
+        repository.saveAndFlush(question);
+    }
+
+    public void delete(Long id) {
+        repository.deleteById(id);
+    }
+
+    public void delete(User user, Long id) {
+        repository.deleteByPublishedFalseAndIdAndUser(id, user);
+    }
+
     @Transactional
     public Question answer(Question question, User user, QuestionAnswerDto dto) {
         Answer answer;
@@ -103,16 +116,14 @@ public class QuestionService {
         return repository.saveAndFlush(question);
     }
 
-    public void publish(Question question, boolean published) {
-        question.setPublished(published);
-        repository.saveAndFlush(question);
-    }
-
-    public void delete(Long id) {
-        repository.deleteById(id);
-    }
-
-    public void delete(User user, Long id) {
-        repository.deleteByPublishedFalseAndIdAndUser(id, user);
+    @Transactional
+    public void deleteAnswer(Question question) {
+        Answer answer = question.getAnswer();
+        if (answer != null) {
+            question.setPublished(false);
+            question.setAnswer(null);
+            repository.save(question);
+            answerRepository.delete(answer);
+        }
     }
 }

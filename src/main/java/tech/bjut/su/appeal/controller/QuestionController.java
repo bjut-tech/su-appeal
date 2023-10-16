@@ -121,19 +121,6 @@ public class QuestionController {
         return service.create(user, dto);
     }
 
-    @PostMapping("/{id}/answer")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public Question answer(
-        @PathVariable Long id,
-        @Valid @RequestBody QuestionAnswerDto dto
-    ) {
-        Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
-        );
-
-        return service.answer(question, securityService.user(), dto);
-    }
-
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasAuthority('ADMIN')")
     public void publish(@PathVariable Long id) {
@@ -164,5 +151,28 @@ public class QuestionController {
         } else {
             service.delete(securityService.user(), id);
         }
+    }
+
+    @PostMapping("/{id}/answer")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Question answer(
+        @PathVariable Long id,
+        @Valid @RequestBody QuestionAnswerDto dto
+    ) {
+        Question question = service.find(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+        );
+
+        return service.answer(question, securityService.user(), dto);
+    }
+
+    @DeleteMapping("/{id}/answer")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public void deleteAnswer(@PathVariable Long id) {
+        Question question = service.find(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+        );
+
+        service.deleteAnswer(question);
     }
 }
