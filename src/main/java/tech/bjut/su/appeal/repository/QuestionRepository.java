@@ -16,13 +16,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     long countByAnswerNull();
 
-    @EntityGraph(attributePaths = { "user", "attachments", "answer" })
     Window<Question> findFirst10ByOrderByIdDesc(KeysetScrollPosition position);
 
-    @EntityGraph(attributePaths = { "user", "attachments", "answer" })
     Window<Question> findFirst10ByPublishedTrueOrderByIdDesc(KeysetScrollPosition position);
 
-    @EntityGraph(attributePaths = { "user", "attachments", "answer" })
     Window<Question> findFirst10ByUserOrderByIdDesc(User user, KeysetScrollPosition position);
 
     @Override
