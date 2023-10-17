@@ -12,6 +12,10 @@ import java.util.Optional;
 
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 
+    long countByUser(User user);
+
+    long countByAnswerNull();
+
     @EntityGraph(attributePaths = { "user", "attachments", "answer" })
     Window<Question> findFirst10ByOrderByIdDesc(KeysetScrollPosition position);
 

@@ -18,7 +18,7 @@ public class SecurityService {
     public User user() {
         Authentication authentication = authentication();
 
-        if (authentication == null) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal)) {
             return null;
         }
 

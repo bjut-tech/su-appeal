@@ -63,6 +63,14 @@ public class QuestionService {
         return repository.findByIdAndUser(id, user);
     }
 
+    public long countHistory(User user) {
+        return repository.countByUser(user);
+    }
+
+    public long countUnreplied() {
+        return repository.countByAnswerNull();
+    }
+
     public Question create(User user, QuestionCreateDto dto) {
         Question question = new Question();
         question.setUser(user);

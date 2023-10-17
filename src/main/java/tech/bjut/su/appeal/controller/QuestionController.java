@@ -6,7 +6,6 @@ import org.springframework.data.domain.Window;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import tech.bjut.su.appeal.dto.CursorPaginationDto;
@@ -15,11 +14,12 @@ import tech.bjut.su.appeal.dto.QuestionCreateDto;
 import tech.bjut.su.appeal.entity.Question;
 import tech.bjut.su.appeal.entity.User;
 import tech.bjut.su.appeal.jsonview.UserViews;
-import tech.bjut.su.appeal.security.UserPrincipal;
 import tech.bjut.su.appeal.service.QuestionService;
 import tech.bjut.su.appeal.service.SecurityService;
 import tech.bjut.su.appeal.service.UserService;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -42,10 +42,24 @@ public class QuestionController {
         this.securityService = securityService;
     }
 
+    @GetMapping("/count")
+    public Map<String, Long> count() {
+        Map<String, Long> result = new HashMap<>(Map.of());
+
+        User user = securityService.user();
+        if (user != null) {
+            result.put("history", service.countHistory(securityService.user()));
+        }
+
+        if (securityService.hasAuthority("ADMIN")) {
+            result.put("unreplied", service.countUnreplied());
+        }
+
+        return result;
+    }
+
     @GetMapping("")
-    public MappingJacksonValue index(
-        @RequestParam(required = false) String cursor
-    ) {
+    public MappingJacksonValue index(@RequestParam(required = false) String cursor) {
         final boolean isAdmin = securityService.hasAuthority("ADMIN");
 
         Window<Question> pagination;
@@ -107,15 +121,10 @@ public class QuestionController {
 
     @PostMapping("")
     @JsonView(UserViews.Private.class)
-    public Question store(
-        Authentication auth,
-        @Valid @RequestBody QuestionCreateDto dto
-    ) {
-        User user;
-        if (auth == null) {
+    public Question store(@Valid @RequestBody QuestionCreateDto dto) {
+        User user = securityService.user();
+        if (user == null) {
             user = userService.findOrCreate(dto.getUid(), dto.getName());
-        } else {
-            user = ((UserPrincipal) auth.getPrincipal()).getUser();
         }
 
         return service.create(user, dto);
