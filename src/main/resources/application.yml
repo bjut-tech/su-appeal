@@ -29,8 +29,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
+      maximum-pool-size: 5
+      minimum-idle: 1
       idle-timeout: 30000
   jpa:
     generate-ddl: true
@@ -48,6 +48,8 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 101MB
+  jmx:
+    enabled: false
 server:
   forward-headers-strategy: framework
 bucket4j:

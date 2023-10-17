@@ -16,7 +16,7 @@ public class ServerStatusDto {
     private double diskTotal;
 
     public double getMemoryUsage() {
-        return memoryUsed / memoryMax;
+        return Math.min(memoryUsed / memoryMax, 1.0);
     }
 
     public double getDiskUsage() {
