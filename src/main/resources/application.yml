@@ -34,8 +34,6 @@ spring:
       idle-timeout: 30000
   jpa:
     generate-ddl: true
-    hibernate:
-      ddl-auto: create
     properties:
       hibernate:
         globally_quoted_identifiers: true
