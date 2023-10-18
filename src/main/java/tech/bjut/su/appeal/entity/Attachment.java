@@ -12,7 +12,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import tech.bjut.su.appeal.jsonview.UserViews;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -31,5 +31,5 @@ public class Attachment {
     private long size;
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

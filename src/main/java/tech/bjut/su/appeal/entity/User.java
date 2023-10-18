@@ -13,7 +13,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import tech.bjut.su.appeal.enums.UserRoleEnum;
 import tech.bjut.su.appeal.jsonview.UserViews;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -50,8 +50,8 @@ public class User {
     private List<Answer> answers;
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }
