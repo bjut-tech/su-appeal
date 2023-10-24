@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import tech.bjut.su.appeal.enums.CampusEnum;
 import tech.bjut.su.appeal.jsonview.UserViews;
 
 import java.time.Instant;
@@ -30,6 +31,9 @@ public class Question {
 
     @JsonView(UserViews.Private.class)
     private String contact;
+
+    @Enumerated(EnumType.STRING)
+    private CampusEnum campus;
 
     @Column(nullable = false, length = 65535)
     private String content;

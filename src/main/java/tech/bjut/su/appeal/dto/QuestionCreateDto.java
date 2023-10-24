@@ -1,8 +1,10 @@
 package tech.bjut.su.appeal.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import tech.bjut.su.appeal.enums.CampusEnum;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +22,9 @@ public class QuestionCreateDto {
     @NotBlank
     @Size(max = 255)
     private String contact;
+
+    @NotNull(message = "不能为空")
+    private CampusEnum campus;
 
     @NotBlank
     @Size(max = 65535)

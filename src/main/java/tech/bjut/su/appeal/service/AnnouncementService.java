@@ -13,6 +13,7 @@ import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.util.CursorPagination;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AnnouncementService {
@@ -29,10 +30,18 @@ public class AnnouncementService {
         this.attachmentRepository = attachmentRepository;
     }
 
+    public List<Announcement> getPinned() {
+        return repository.findByPinnedTrueOrderByIdDesc();
+    }
+
     public Window<Announcement> getPaginated(@Nullable String cursor) {
         KeysetScrollPosition position = CursorPagination.positionOf(cursor);
 
-        return repository.findFirst10ByOrderByIdDesc(position);
+        return repository.findFirst10ByPinnedFalseOrderByIdDesc(position);
+    }
+
+    public Optional<Announcement> find(Long id) {
+        return repository.findById(id);
     }
 
     public Announcement create(User user, AnnouncementCreateDto dto) {
@@ -47,6 +56,11 @@ public class AnnouncementService {
         }
 
         return repository.saveAndFlush(announcement);
+    }
+
+    public void setPinned(Announcement announcement, boolean pinned) {
+        announcement.setPinned(pinned);
+        repository.saveAndFlush(announcement);
     }
 
     public void delete(long id) {

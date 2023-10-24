@@ -75,6 +75,7 @@ public class QuestionService {
         Question question = new Question();
         question.setUser(user);
         question.setContact(dto.getContact());
+        question.setCampus(dto.getCampus());
         question.setContent(dto.getContent());
 
         if (dto.getAttachmentIds() != null && !dto.getAttachmentIds().isEmpty()) {
@@ -85,7 +86,7 @@ public class QuestionService {
         return repository.saveAndFlush(question);
     }
 
-    public void publish(Question question, boolean published) {
+    public void setPublished(Question question, boolean published) {
         question.setPublished(published);
         repository.saveAndFlush(question);
     }

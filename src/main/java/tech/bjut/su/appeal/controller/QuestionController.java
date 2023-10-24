@@ -137,7 +137,7 @@ public class QuestionController {
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
         );
 
-        service.publish(question, true);
+        service.setPublished(question, true);
     }
 
     @PostMapping("/{id}/unpublish")
@@ -147,7 +147,7 @@ public class QuestionController {
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
         );
 
-        service.publish(question, false);
+        service.setPublished(question, false);
     }
 
     @DeleteMapping("/{id}")

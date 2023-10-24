@@ -38,6 +38,8 @@ public class Announcement {
     @JoinTable
     private List<Attachment> attachments;
 
+    private boolean pinned = false;
+
     @CreationTimestamp
     private Instant createdAt;
 

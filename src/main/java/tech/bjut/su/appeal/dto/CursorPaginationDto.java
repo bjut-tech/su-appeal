@@ -15,6 +15,8 @@ import java.util.List;
 @JsonView(UserViews.Public.class)
 public class CursorPaginationDto<T> {
 
+    private List<T> pinned = null;
+
     private List<T> data;
 
     @Nullable private String cursor;
