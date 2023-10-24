@@ -5,9 +5,12 @@ spring:
     driver-class-name: org.h2.Driver
   jpa:
     show-sql: false
+    generate-ddl: true
     hibernate:
       ddl-auto: create-drop
     database: h2
   h2:
     console:
       enabled: false
+  flyway:
+    enabled: false

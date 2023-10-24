@@ -6,12 +6,12 @@ spring:
     driver-class-name: org.h2.Driver
   jpa:
     show-sql: true
-    hibernate:
-      ddl-auto: update
     database: h2
 logging:
   level:
     org:
+      hibernate:
+        sql: DEBUG
       springframework:
         security: DEBUG
     tech:
