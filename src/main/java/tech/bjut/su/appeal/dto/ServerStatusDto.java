@@ -9,14 +9,14 @@ public class ServerStatusDto {
 
     private double memoryUsed;
 
-    private double memoryMax;
+    private double memoryTotal;
 
     private double diskFree;
 
     private double diskTotal;
 
     public double getMemoryUsage() {
-        return Math.min(memoryUsed / memoryMax, 1.0);
+        return Math.min(memoryUsed / memoryTotal, 1.0);
     }
 
     public double getDiskUsage() {
