@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import tech.bjut.su.appeal.dto.CursorPaginationDto;
 import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
+import tech.bjut.su.appeal.entity.Answer;
 import tech.bjut.su.appeal.entity.Question;
 import tech.bjut.su.appeal.entity.User;
 import tech.bjut.su.appeal.jsonview.UserViews;
@@ -19,6 +20,7 @@ import tech.bjut.su.appeal.service.SecurityService;
 import tech.bjut.su.appeal.service.UserService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -140,7 +142,7 @@ public class QuestionController {
         service.setPublished(question, true);
     }
 
-    @PostMapping("/{id}/unpublish")
+    @DeleteMapping("/{id}/publish")
     @PreAuthorize("hasAuthority('ADMIN')")
     public void unpublish(@PathVariable Long id) {
         Question question = service.find(id).orElseThrow(
@@ -183,5 +185,30 @@ public class QuestionController {
         );
 
         service.deleteAnswer(question);
+    }
+
+    @GetMapping("/liked-answers")
+    @PreAuthorize("isAuthenticated()")
+    public List<Long> getLikedAnswers() {
+        return service.getLikedAnswerIds(securityService.user());
+    }
+
+    @PostMapping("/{id}/answer/like")
+    public void likeAnswer(@PathVariable Long id) {
+        Answer answer = service.findAnswerOf(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found")
+        );
+
+        service.likeAnswer(securityService.user(), answer);
+    }
+
+    @DeleteMapping("/{id}/answer/like")
+    @PreAuthorize("isAuthenticated()")
+    public void unlikeAnswer(@PathVariable Long id) {
+        Answer answer = service.findAnswerOf(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found")
+        );
+
+        service.unlikeAnswer(securityService.user(), answer);
     }
 }

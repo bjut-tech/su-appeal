@@ -7,10 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
-import tech.bjut.su.appeal.entity.Answer;
-import tech.bjut.su.appeal.entity.Attachment;
-import tech.bjut.su.appeal.entity.Question;
-import tech.bjut.su.appeal.entity.User;
+import tech.bjut.su.appeal.entity.*;
+import tech.bjut.su.appeal.repository.AnswerLikeRepository;
 import tech.bjut.su.appeal.repository.AnswerRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
@@ -25,15 +23,19 @@ public class QuestionService {
 
     private final AnswerRepository answerRepository;
 
+    private final AnswerLikeRepository likeRepository;
+
     private final AttachmentRepository attachmentRepository;
 
     public QuestionService(
         QuestionRepository repository,
         AnswerRepository answerRepository,
+        AnswerLikeRepository likeRepository,
         AttachmentRepository attachmentRepository
     ) {
         this.repository = repository;
         this.answerRepository = answerRepository;
+        this.likeRepository = likeRepository;
         this.attachmentRepository = attachmentRepository;
     }
 
@@ -99,6 +101,10 @@ public class QuestionService {
         repository.deleteByPublishedFalseAndIdAndUser(id, user);
     }
 
+    public Optional<Answer> findAnswerOf(Long id) {
+        return answerRepository.findByQuestionId(id);
+    }
+
     @Transactional
     public Question answer(Question question, User user, QuestionAnswerDto dto) {
         Answer answer;
@@ -134,5 +140,38 @@ public class QuestionService {
             repository.save(question);
             answerRepository.delete(answer);
         }
+    }
+
+    @Transactional
+    public void likeAnswer(User user, Answer answer) {
+        if (user != null) {
+            if (likeRepository.findByUserAndAnswer(user, answer).isPresent()) {
+                return;
+            }
+
+            AnswerLike like = new AnswerLike();
+            like.setUser(user);
+            like.setAnswer(answer);
+            likeRepository.saveAndFlush(like);
+        }
+
+        answer.setLikesCount(answer.getLikesCount() + 1);
+        answerRepository.saveAndFlush(answer);
+    }
+
+    @Transactional
+    public void unlikeAnswer(User user, Answer answer) {
+        if (user != null) {
+            likeRepository.findByUserAndAnswer(user, answer).ifPresent(likeRepository::delete);
+        }
+
+        answer.setLikesCount(Math.max(answer.getLikesCount() - 1, 0));
+        answerRepository.saveAndFlush(answer);
+    }
+
+    public List<Long> getLikedAnswerIds(User user) {
+        return likeRepository.findByUser(user).stream()
+            .map(AnswerLike::getAnswerId)
+            .toList();
     }
 }

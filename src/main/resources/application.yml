@@ -89,6 +89,14 @@ bucket4j:
             - capacity: 10
               time: 1
               unit: minutes
+        - execute-predicates:
+            - "PATH=/questions/*/answer/like"
+            - "METHOD=POST"
+          execute-condition: "@securityService.user() == null"
+          bandwidths:
+            - capacity: 1
+              time: 1
+              unit: minutes
       metrics:
         enabled: false
 app:

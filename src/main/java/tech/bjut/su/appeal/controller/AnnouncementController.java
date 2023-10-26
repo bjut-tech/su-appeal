@@ -69,7 +69,7 @@ public class AnnouncementController {
         service.setPinned(announcement, true);
     }
 
-    @PostMapping("/{id}/unpin")
+    @DeleteMapping("/{id}/pin")
     @PreAuthorize("hasAuthority('ADMIN')")
     public void unpin(@PathVariable Long id) {
         Announcement announcement = service.find(id).orElseThrow(

@@ -42,6 +42,8 @@ public class Answer {
     @JsonIgnore
     private Question question;
 
+    private long likesCount = 0;
+
     @CreationTimestamp
     private Instant createdAt;
 
