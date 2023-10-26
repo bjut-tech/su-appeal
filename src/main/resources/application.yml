@@ -62,11 +62,8 @@ bucket4j:
   filters:
     - cache-name: buckets
       filter-method: servlet
+      filter-order: 10
       hide-http-response-headers: false
-      http-response-headers:
-        "Access-Control-Allow-Origin": "*"
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
-        "Access-Control-Allow-Headers": "Authorization, Content-Type"
       url: .*
       rate-limits:
         - execute-predicates:
