@@ -31,7 +31,7 @@ public class CasRestAuthenticationProvider implements AuthenticationProvider {
 
     private final UserService userService;
 
-    private final Logger logger = LoggerFactory.getLogger(CasRestAuthenticationProvider.class);
+    private static final Logger logger = LoggerFactory.getLogger(CasRestAuthenticationProvider.class);
 
     public CasRestAuthenticationProvider(
         UserService userService

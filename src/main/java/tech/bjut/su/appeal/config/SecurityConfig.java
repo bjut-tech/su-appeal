@@ -39,7 +39,7 @@ public class SecurityConfig {
 
     private final String frontendUrl;
 
-    private final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     public SecurityConfig(
         AppProperties properties,

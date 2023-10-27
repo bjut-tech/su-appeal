@@ -17,7 +17,7 @@ logging:
     tech:
       bjut:
         su:
-          appeal: DEBUG
+          appeal: TRACE
 app:
   store:
     path: ./data/uploads
