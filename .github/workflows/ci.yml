@@ -43,9 +43,13 @@ jobs:
       - id: aliyun-cr-token
         name: Obtain Aliyun Container Registry credentials
         run: |
+          aliyun cr --force --version 2016-06-07 GET /tokens > cr_token.json
+          TOKEN=$(jq -r '.data.authorizationToken' cr_token.json)
+          echo "::add-mask::$TOKEN"
           echo "json<<EOF" >> $GITHUB_OUTPUT
-          aliyun cr --force --version 2016-06-07 GET /tokens >> $GITHUB_OUTPUT
+          cat cr_token.json >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          rm -f cr_token.json
 
       - name: Login to Aliyun Container Registry
         uses: docker/login-action@v2
