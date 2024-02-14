@@ -116,3 +116,5 @@ app:
   store:
     type: local
     path: /var/lib/bjut-su-appeal/uploads
+  frontend: https://appeal.bjut.tech
+  auth-server: https://auth.bjut.tech

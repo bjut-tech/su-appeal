@@ -22,3 +22,4 @@ app:
   store:
     path: ./data/uploads
   frontend: http://localhost:5173
+  auth-server: http://localhost:8021

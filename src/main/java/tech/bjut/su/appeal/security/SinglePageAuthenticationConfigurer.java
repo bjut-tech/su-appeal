@@ -17,5 +17,6 @@ public class SinglePageAuthenticationConfigurer extends AbstractHttpConfigurer<S
     public void configure(HttpSecurity http) {
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
         http.addFilter(new SinglePageAuthenticationFilter(jwtEncoder, authenticationManager));
+        http.addFilterAt(new AuthServerTokenExchangeAuthenticationFilter(jwtEncoder, authenticationManager), SinglePageAuthenticationFilter.class);
     }
 }

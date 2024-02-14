@@ -14,6 +14,8 @@ public class AppProperties {
 
     private String frontend;
 
+    private String authServer;
+
     private final Auth auth = new Auth();
 
     @Getter

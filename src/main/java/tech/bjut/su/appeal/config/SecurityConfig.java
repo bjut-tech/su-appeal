@@ -19,6 +19,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import tech.bjut.su.appeal.security.AuthServerTokenExchangeAuthenticationProvider;
 import tech.bjut.su.appeal.security.CasRestAuthenticationProvider;
 import tech.bjut.su.appeal.security.SinglePageAuthenticationConfigurer;
 import tech.bjut.su.appeal.security.UserDetailsJwtAuthenticationConverter;
@@ -30,6 +31,8 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    private final AuthServerTokenExchangeAuthenticationProvider authServerAuthenticationProvider;
 
     private final CasRestAuthenticationProvider casRestAuthenticationProvider;
 
@@ -43,10 +46,12 @@ public class SecurityConfig {
 
     public SecurityConfig(
         AppProperties properties,
+        AuthServerTokenExchangeAuthenticationProvider authServerAuthenticationProvider,
         CasRestAuthenticationProvider casRestAuthenticationProvider,
         UserDetailsJwtAuthenticationConverter jwtAuthenticationConverter,
         JwtEncoder jwtEncoder
     ) {
+        this.authServerAuthenticationProvider = authServerAuthenticationProvider;
         this.casRestAuthenticationProvider = casRestAuthenticationProvider;
         this.jwtAuthenticationConverter = jwtAuthenticationConverter;
         this.jwtEncoder = jwtEncoder;
@@ -60,6 +65,7 @@ public class SecurityConfig {
             .headers(headers -> headers.httpStrictTransportSecurity(HeadersConfigurer.HstsConfig::disable)
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authenticationProvider(authServerAuthenticationProvider)
             .authenticationProvider(casRestAuthenticationProvider)
             .oauth2ResourceServer(oauth -> oauth
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
@@ -94,6 +100,7 @@ public class SecurityConfig {
         }
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(Duration.ofHours(1));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

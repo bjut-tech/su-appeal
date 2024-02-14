@@ -31,6 +31,7 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
         Instant now = Instant.now();
         long expiry = 86400;
         JwtClaimsSet claims = JwtClaimsSet.builder()
+            .issuer("https://appeal.bjut.tech/")
             .issuedAt(now)
             .expiresAt(now.plusSeconds(expiry))
             .subject(((UserPrincipal) authentication.getPrincipal()).getUsername())
