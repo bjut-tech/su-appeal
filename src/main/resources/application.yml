@@ -62,16 +62,25 @@ bucket4j:
   filters:
     - cache-name: buckets
       filter-method: servlet
-      filter-order: 10
       hide-http-response-headers: false
+      http-response-headers:
+        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+        "Access-Control-Allow-Headers": "Authorization, Content-Type"
       url: .*
       rate-limits:
         - execute-predicates:
             - "PATH=/token"
           bandwidths:
             - capacity: 10
-              time: 5
+              time: 2
               unit: minutes
+    - cache-name: buckets
+      filter-method: servlet
+      filter-order: 10
+      hide-http-response-headers: false
+      url: .*
+      rate-limits:
         - cache-key: "@securityService.username()?: getRemoteAddr()"
           execute-predicates:
             - "PATH=/attachments"
