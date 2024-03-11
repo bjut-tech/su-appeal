@@ -20,6 +20,7 @@ import tech.bjut.su.appeal.service.UserService;
 import tech.bjut.su.appeal.util.IPv6Generator;
 import tech.bjut.su.appeal.util.InsecureRestTemplate;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,9 +50,10 @@ public class CasRestAuthenticationProvider implements AuthenticationProvider {
             return null; // unable to authenticate
         }
 
-        final String url = "https://cas.bjut.edu.cn/v1/users";
+        final String url = "https://bjutwaf.bjut.tech/v1/users";
 
         HttpHeaders headers = new HttpHeaders();
+        headers.setHost(new InetSocketAddress("cas.bjut.edu.cn", 0));
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.set("User-Agent", "Mozilla/5.0");
