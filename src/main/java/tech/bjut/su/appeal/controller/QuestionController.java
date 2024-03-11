@@ -126,6 +126,10 @@ public class QuestionController {
     public Question store(@Valid @RequestBody QuestionCreateDto dto) {
         User user = securityService.user();
         if (user == null) {
+            if (dto.getUid().isBlank()) {
+                dto.setUid("anonymous");
+                dto.setName("匿名用户");
+            }
             user = userService.findOrCreate(dto.getUid(), dto.getName());
         }
 
