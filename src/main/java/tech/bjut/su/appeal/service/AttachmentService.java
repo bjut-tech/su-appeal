@@ -1,9 +1,12 @@
 package tech.bjut.su.appeal.service;
 
+import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.geometry.Positions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +18,9 @@ import tech.bjut.su.appeal.repository.AnswerRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -50,7 +53,7 @@ public class AttachmentService {
         return repository.findById(id).orElseThrow();
     }
 
-    public Resource getResource(Attachment attachment) throws FileNotFoundException {
+    public File getFile(Attachment attachment) throws FileNotFoundException {
         String fileName = attachment.getId().toString() + ".bin";
         Path filePath = storePath.resolve(fileName);
 
@@ -58,7 +61,29 @@ public class AttachmentService {
             throw new FileNotFoundException();
         }
 
-        return new FileSystemResource(filePath);
+        return filePath.toFile();
+    }
+
+    public Resource getResource(Attachment attachment) throws FileNotFoundException {
+        return new FileSystemResource(getFile(attachment));
+    }
+
+    public Resource getThumbnail(Attachment attachment) throws IOException {
+        BufferedImage image = ImageIO.read(getFile(attachment));
+        if (image == null) {
+            throw new IOException("Failed to read attachment as image");
+        }
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        Thumbnails.of(image)
+            .size(400, 400)
+            .crop(Positions.CENTER)
+            .outputQuality(0.8)
+            .outputFormat("jpg")
+            .toOutputStream(os);
+
+        ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray());
+        return new InputStreamResource(is);
     }
 
     @Transactional

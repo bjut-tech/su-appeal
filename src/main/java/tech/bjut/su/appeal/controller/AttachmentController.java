@@ -13,6 +13,8 @@ import tech.bjut.su.appeal.entity.Attachment;
 import tech.bjut.su.appeal.service.AttachmentService;
 import tech.bjut.su.appeal.service.SecurityService;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -84,6 +86,19 @@ public class AttachmentController {
                 .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic().immutable())
                 .body(service.getResource(attachment));
         } catch (FileNotFoundException | NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+        }
+    }
+
+    @GetMapping("/{id}/thumbnail")
+    public ResponseEntity<Resource> thumbnail(@PathVariable("id") UUID id) {
+        try {
+            Attachment attachment = service.get(id);
+            return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic().immutable())
+                .body(service.getThumbnail(attachment));
+        } catch (IOException | NoSuchElementException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
         }
     }
