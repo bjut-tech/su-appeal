@@ -4,13 +4,12 @@ spring:
     password:
     driver-class-name: org.h2.Driver
   jpa:
-    show-sql: false
-    generate-ddl: true
-    hibernate:
-      ddl-auto: create-drop
+    show-sql: true
     database: h2
   h2:
     console:
       enabled: false
-  flyway:
-    enabled: false
+app:
+  store:
+    path: ./data/uploads
+  frontend: http://localhost:5173

@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.KeysetScrollPosition;
 import org.springframework.data.domain.Window;
 import org.springframework.lang.Nullable;
@@ -44,6 +45,7 @@ public class AnnouncementService {
         return repository.findById(id);
     }
 
+    @Transactional
     public Announcement create(User user, AnnouncementCreateDto dto) {
         Announcement announcement = new Announcement();
         announcement.setUser(user);

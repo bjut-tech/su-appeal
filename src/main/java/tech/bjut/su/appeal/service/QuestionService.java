@@ -28,10 +28,11 @@ public class QuestionService {
     private final AttachmentRepository attachmentRepository;
 
     public QuestionService(
-            QuestionRepository repository,
-            AnswerRepository answerRepository,
-            AnswerLikeRepository likeRepository,
-            AttachmentRepository attachmentRepository) {
+        QuestionRepository repository,
+        AnswerRepository answerRepository,
+        AnswerLikeRepository likeRepository,
+        AttachmentRepository attachmentRepository
+    ) {
         this.repository = repository;
         this.answerRepository = answerRepository;
         this.likeRepository = likeRepository;
@@ -72,6 +73,7 @@ public class QuestionService {
         return repository.countByAnswerNull();
     }
 
+    @Transactional
     public Question create(User user, QuestionCreateDto dto) {
         Question question = new Question();
         question.setUser(user);
@@ -137,7 +139,6 @@ public class QuestionService {
             question.setPublished(false);
             question.setAnswer(null);
             repository.save(question);
-            likeRepository.deleteAllByAnswer(answer);
             answerRepository.delete(answer);
         }
     }

@@ -42,6 +42,10 @@ public class Answer {
     @JsonIgnore
     private Question question;
 
+    @OneToMany(mappedBy = "answer", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<AnswerLike> likes;
+
     private long likesCount = 0;
 
     @CreationTimestamp

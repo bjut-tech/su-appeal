@@ -42,7 +42,7 @@ public class Question {
     @JoinTable
     private List<Attachment> attachments;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private Answer answer;
 
     @Column(nullable = false)
