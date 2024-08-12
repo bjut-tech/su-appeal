@@ -55,12 +55,12 @@ public class AnnouncementService {
             announcement.setAttachments(existingAttachments);
         }
 
-        return repository.saveAndFlush(announcement);
+        return repository.save(announcement);
     }
 
     public void setPinned(Announcement announcement, boolean pinned) {
         announcement.setPinned(pinned);
-        repository.saveAndFlush(announcement);
+        repository.save(announcement);
     }
 
     public void delete(long id) {

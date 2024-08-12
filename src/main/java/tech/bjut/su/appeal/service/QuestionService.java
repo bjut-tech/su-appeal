@@ -84,12 +84,12 @@ public class QuestionService {
             question.setAttachments(existingAttachments);
         }
 
-        return repository.saveAndFlush(question);
+        return repository.save(question);
     }
 
     public void setPublished(Question question, boolean published) {
         question.setPublished(published);
-        repository.saveAndFlush(question);
+        repository.save(question);
     }
 
     public void delete(Long id) {
@@ -122,12 +122,12 @@ public class QuestionService {
             answer.setAttachments(existingAttachments);
         }
 
-        answer = answerRepository.saveAndFlush(answer);
+        answer = answerRepository.save(answer);
         if (question.getAnswer() == null) {
             question.setAnswer(answer);
         }
 
-        return repository.saveAndFlush(question);
+        return repository.save(question);
     }
 
     @Transactional
@@ -152,11 +152,11 @@ public class QuestionService {
             AnswerLike like = new AnswerLike();
             like.setUser(user);
             like.setAnswer(answer);
-            likeRepository.saveAndFlush(like);
+            likeRepository.save(like);
         }
 
         answer.setLikesCount(answer.getLikesCount() + 1);
-        answerRepository.saveAndFlush(answer);
+        answerRepository.save(answer);
     }
 
     @Transactional
@@ -166,7 +166,7 @@ public class QuestionService {
         }
 
         answer.setLikesCount(Math.max(answer.getLikesCount() - 1, 0));
-        answerRepository.saveAndFlush(answer);
+        answerRepository.save(answer);
     }
 
     public List<Long> getLikedAnswerIds(User user) {

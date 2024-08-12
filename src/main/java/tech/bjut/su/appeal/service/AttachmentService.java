@@ -105,7 +105,7 @@ public class AttachmentService {
     }
 
     public Attachment store(Attachment attachment) {
-        return repository.saveAndFlush(attachment);
+        return repository.save(attachment);
     }
 
     /**

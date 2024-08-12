@@ -49,7 +49,7 @@ public class UserService {
         user.setName(attributes.get("name"));
         user.setAdmin(adminList.contains(user.getUid()));
 
-        user = repository.saveAndFlush(user);
+        user = repository.save(user);
         return user;
     }
 }
