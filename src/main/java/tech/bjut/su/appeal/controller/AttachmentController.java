@@ -13,8 +13,6 @@ import tech.bjut.su.appeal.entity.Attachment;
 import tech.bjut.su.appeal.service.AttachmentService;
 import tech.bjut.su.appeal.service.SecurityService;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
