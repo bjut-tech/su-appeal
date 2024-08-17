@@ -19,12 +19,16 @@ public class AdminController {
 
     private final MetricsEndpoint metrics;
 
+    private final SystemMemory systemMemory;
+
     public AdminController(
         AppProperties properties,
-        MetricsEndpoint metrics
+        MetricsEndpoint metrics,
+        SystemMemory systemMemory
     ) {
         this.properties = properties;
         this.metrics = metrics;
+        this.systemMemory = systemMemory;
     }
 
     @GetMapping("/admins")
@@ -37,8 +41,8 @@ public class AdminController {
         ServerStatusDto response = new ServerStatusDto();
 
         response.setCpuUsage(metrics.metric("system.cpu.usage", null).getMeasurements().get(0).getValue());
-        response.setMemoryUsed(SystemMemory.getUsed());
-        response.setMemoryTotal(SystemMemory.getTotal());
+        response.setMemoryUsed(systemMemory.getUsed());
+        response.setMemoryTotal(systemMemory.getTotal());
         response.setDiskFree(metrics.metric("disk.free", null).getMeasurements().get(0).getValue());
         response.setDiskTotal(metrics.metric("disk.total", null).getMeasurements().get(0).getValue());
 
