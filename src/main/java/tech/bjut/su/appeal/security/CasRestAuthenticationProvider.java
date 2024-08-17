@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.*;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@Lazy
 public class CasRestAuthenticationProvider implements AuthenticationProvider {
 
     private final RestTemplate restTemplate;

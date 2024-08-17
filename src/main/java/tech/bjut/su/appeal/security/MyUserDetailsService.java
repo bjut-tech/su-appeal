@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.security;
 
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
@@ -7,6 +8,7 @@ import tech.bjut.su.appeal.entity.User;
 import tech.bjut.su.appeal.service.UserService;
 
 @Component
+@Primary
 public class MyUserDetailsService implements UserDetailsService {
 
     private final UserService userService;
