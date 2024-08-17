@@ -1,254 +1,531 @@
 package tech.bjut.su.appeal.service;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
-import tech.bjut.su.appeal.entity.Answer;
-import tech.bjut.su.appeal.entity.Attachment;
-import tech.bjut.su.appeal.entity.Question;
-import tech.bjut.su.appeal.entity.User;
+import tech.bjut.su.appeal.entity.*;
 import tech.bjut.su.appeal.enums.CampusEnum;
-import tech.bjut.su.appeal.repository.AnswerRepository;
-import tech.bjut.su.appeal.repository.AttachmentRepository;
-import tech.bjut.su.appeal.repository.QuestionRepository;
+import tech.bjut.su.appeal.enums.UserRoleEnum;
+import tech.bjut.su.appeal.repository.*;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@DataJpaTest
+@ActiveProfiles("test")
+@Import(QuestionService.class)
+@Transactional
 public class QuestionServiceTest {
 
-    @Mock
+    @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
     private QuestionRepository questionRepository;
 
-    @Mock
+    @Autowired
     private AnswerRepository answerRepository;
 
-    @Mock
+    @Autowired
+    private AnswerLikeRepository answerLikeRepository;
+
+    @Autowired
     private AttachmentRepository attachmentRepository;
 
-    @InjectMocks
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private QuestionService questionService;
 
     // The test data
-    private User user;
+    private User user1, user2;
 
-    private static final long QUESTION_ID = 1;
-    private static final long ANSWER_ID = 1;
-    private static final String USER_UID = "user";
-    private static final String QUESTION_CONTENT = "title";
+    private static final String USER_UID_1 = "user1";
+    private static final String USER_UID_2 = "user2";
     private static final String QUESTION_CONTACT = "contact";
+    private static final String QUESTION_CONTENT = "content";
     private static final CampusEnum QUESTION_CAMPUS = CampusEnum.MAIN;
     private static final String ANSWER_CONTENT = "content";
-    private static final UUID ATTACHMENT_ID = UUID.randomUUID();
 
     @BeforeEach
     public void setUp() {
-        user = new User();
-        user.setUid(USER_UID);
+        user1 = new User();
+        user1.setUid(USER_UID_1);
+        user1.setRole(UserRoleEnum.STUDENT);
+        user1 = userRepository.save(user1);
+
+        user2 = new User();
+        user2.setUid(USER_UID_2);
+        user2.setRole(UserRoleEnum.STUDENT);
+        user2 = userRepository.save(user2);
     }
 
     @Test
     public void testCreate_noAttachment_noContact() {
-        // set up mocking
-        setUpMocking_questionRepository_save();
-
-        // execute
         QuestionCreateDto dto = new QuestionCreateDto();
         dto.setCampus(QUESTION_CAMPUS);
         dto.setContent(QUESTION_CONTENT);
 
-        Question res = questionService.create(user, dto);
+        Question question = questionService.create(user1, dto);
 
-        // verify
-        assertThat(res).isNotNull();
-        assertThat(res.getId()).isGreaterThan(0);
-        assertThat(res.getUser()).isEqualTo(user);
-        assertThat(res.getContent()).isEqualTo(QUESTION_CONTENT);
-        assertThat(res.getCampus()).isEqualTo(QUESTION_CAMPUS);
-        assertThat(res.getContact()).isNullOrEmpty();
-        assertThat(res.getAttachments()).isNullOrEmpty();
-        verify(questionRepository, times(1)).save(any(Question.class));
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getUser()).isEqualTo(user1);
+        assertThat(fetchedQuestion.getContent()).isEqualTo(QUESTION_CONTENT);
+        assertThat(fetchedQuestion.getCampus()).isEqualTo(QUESTION_CAMPUS);
+        assertThat(fetchedQuestion.getContact()).isNullOrEmpty();
+        assertThat(fetchedQuestion.isPublished()).isFalse(); // should be not published by default
     }
 
     @Test
-    public void testCreate_oneAttachment() {
-        // set up mocking
-        setUpMocking_questionRepository_save();
-        setUpMocking_attachmentRepository_findAllById();
-
-        // execute
-        QuestionCreateDto dto = new QuestionCreateDto();
-        dto.setCampus(QUESTION_CAMPUS);
-        dto.setContent(QUESTION_CONTENT);
-        dto.setAttachmentIds(List.of(ATTACHMENT_ID));
-
-        Question res = questionService.create(user, dto);
-
-        // verify
-        assertThat(res).isNotNull();
-        assertThat(res.getId()).isGreaterThan(0);
-        assertThat(res.getUser()).isEqualTo(user);
-        assertThat(res.getContent()).isEqualTo(QUESTION_CONTENT);
-        assertThat(res.getCampus()).isEqualTo(QUESTION_CAMPUS);
-        assertThat(res.getContact()).isNullOrEmpty();
-        assertThat(res.getAttachments()).hasSize(1);
-        assertThat(res.getAttachments().get(0).getId()).isEqualTo(ATTACHMENT_ID);
-        verify(questionRepository, times(1)).save(any(Question.class));
-        verify(attachmentRepository, times(1)).findAllById(anyList());
-    }
-
-    @Test
-    public void testCreate_hasContact() {
-        // set up mocking
-        setUpMocking_questionRepository_save();
-
-        // execute
+    public void testCreate_canSaveContact() {
         QuestionCreateDto dto = new QuestionCreateDto();
         dto.setCampus(QUESTION_CAMPUS);
         dto.setContent(QUESTION_CONTENT);
         dto.setContact(QUESTION_CONTACT);
 
-        Question res = questionService.create(user, dto);
+        Question question = questionService.create(user1, dto);
 
-        // verify
-        assertThat(res).isNotNull();
-        assertThat(res.getId()).isGreaterThan(0);
-        assertThat(res.getUser()).isEqualTo(user);
-        assertThat(res.getContent()).isEqualTo(QUESTION_CONTENT);
-        assertThat(res.getCampus()).isEqualTo(QUESTION_CAMPUS);
-        assertThat(res.getContact()).isEqualTo(QUESTION_CONTACT);
-        assertThat(res.getAttachments()).isNullOrEmpty();
-        verify(questionRepository, times(1)).save(any(Question.class));
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getUser()).isEqualTo(user1);
+        assertThat(fetchedQuestion.getContent()).isEqualTo(QUESTION_CONTENT);
+        assertThat(fetchedQuestion.getCampus()).isEqualTo(QUESTION_CAMPUS);
+        assertThat(fetchedQuestion.getContact()).isEqualTo(QUESTION_CONTACT);
+        assertThat(fetchedQuestion.isPublished()).isFalse(); // should be not published by default
+    }
+
+    @Test
+    public void testCreate_canSaveAttachments() {
+        // setup
+        Attachment attachment = new Attachment();
+        attachment.setSize(0);
+        attachment = attachmentRepository.save(attachment);
+
+        QuestionCreateDto dto = new QuestionCreateDto();
+        dto.setCampus(QUESTION_CAMPUS);
+        dto.setContent(QUESTION_CONTENT);
+        dto.setAttachmentIds(List.of(attachment.getId()));
+
+        Question question = questionService.create(user1, dto);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getAttachments()).containsExactly(attachment);
     }
 
     @Test
     public void testSetPublished_setToTrue() {
-        // setup mocking
-        setUpMocking_questionRepository_save();
+        // setup
+        Question question = new Question();
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question.setPublished(false);
+        questionRepository.save(question);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
 
         // execute
-        Question question = new Question();
-        question.setPublished(false);
-
         questionService.setPublished(question, true);
 
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
         // verify
-        assertThat(question.isPublished()).isTrue();
-        verify(questionRepository, times(1)).save(question);
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.isPublished()).isTrue();
     }
 
     @Test
     public void testSetPublished_setToFalse() {
-        // setup mocking
-        setUpMocking_questionRepository_save();
+        // setup
+        Question question = new Question();
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question.setPublished(true);
+        questionRepository.save(question);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
 
         // execute
-        Question question = new Question();
-        question.setPublished(true);
-
         questionService.setPublished(question, false);
 
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
         // verify
-        assertThat(question.isPublished()).isFalse();
-        verify(questionRepository, times(1)).save(question);
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.isPublished()).isFalse();
     }
 
     @Test
     public void testAnswer_noAttachment() {
-        // setup mocking
-        setUpMocking_questionRepository_save();
-        setUpMocking_answerRepository_save();
-
-        // execute
+        // setup
         Question question = new Question();
-        question.setId(QUESTION_ID);
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question = questionRepository.save(question);
 
         QuestionAnswerDto dto = new QuestionAnswerDto();
         dto.setContent(ANSWER_CONTENT);
 
-        Question res = questionService.answer(question, user, dto);
+        question = questionService.answer(question, user1, dto);
 
-        // verify
-        assertThat(res).isNotNull();
-        assertThat(res.getId()).isEqualTo(QUESTION_ID);
-        assertThat(res.getAnswer()).isNotNull();
-        assertThat(res.getAnswer().getId()).isEqualTo(QUESTION_ID);
-        assertThat(res.getAnswer().getContent()).isEqualTo(ANSWER_CONTENT);
-        assertThat(res.getAnswer().getUser()).isEqualTo(user);
-        assertThat(res.getAnswer().getAttachments()).isNullOrEmpty();
-        verify(questionRepository, times(1)).save(question);
-        verify(answerRepository, times(1)).save(any(Answer.class));
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getAnswer()).isNotNull();
+        assertThat(fetchedQuestion.getAnswer().getContent()).isEqualTo(ANSWER_CONTENT);
+        assertThat(fetchedQuestion.getAnswer().getLikesCount()).isZero();
     }
 
     @Test
-    public void testAnswer_oneAttachment() {
-        // setup mocking
-        setUpMocking_questionRepository_save();
-        setUpMocking_answerRepository_save();
-        setUpMocking_attachmentRepository_findAllById();
-
-        // execute
+    public void testAnswer_canSaveAttachments() {
+        // setup
         Question question = new Question();
-        question.setId(QUESTION_ID);
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question = questionRepository.save(question);
+
+        Attachment attachment = new Attachment();
+        attachment.setSize(0);
+        attachment = attachmentRepository.save(attachment);
 
         QuestionAnswerDto dto = new QuestionAnswerDto();
         dto.setContent(ANSWER_CONTENT);
-        dto.setAttachmentIds(List.of(ATTACHMENT_ID));
+        dto.setAttachmentIds(List.of(attachment.getId()));
 
-        Question res = questionService.answer(question, user, dto);
+        question = questionService.answer(question, user1, dto);
 
-        // verify
-        assertThat(res).isNotNull();
-        assertThat(res.getId()).isEqualTo(QUESTION_ID);
-        assertThat(res.getAnswer()).isNotNull();
-        assertThat(res.getAnswer().getId()).isEqualTo(QUESTION_ID);
-        assertThat(res.getAnswer().getContent()).isEqualTo(ANSWER_CONTENT);
-        assertThat(res.getAnswer().getUser()).isEqualTo(user);
-        assertThat(res.getAnswer().getAttachments()).hasSize(1);
-        assertThat(res.getAnswer().getAttachments().get(0).getId()).isEqualTo(ATTACHMENT_ID);
-        verify(questionRepository, times(1)).save(question);
-        verify(answerRepository, times(1)).save(any(Answer.class));
-        verify(attachmentRepository, times(1)).findAllById(anyList());
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getAnswer()).isNotNull();
+        assertThat(fetchedQuestion.getAnswer().getAttachments()).containsExactly(attachment);
     }
 
-    private void setUpMocking_questionRepository_save() {
-        when(questionRepository.save(any(Question.class)))
-            .thenAnswer(invocation -> {
-                Question question = invocation.getArgument(0);
-                question.setId(QUESTION_ID);
-                return question;
-            });
+    @Test
+    public void testLikeAnswer() {
+        // setup
+        Answer answer = new Answer();
+        answer.setUser(user1);
+        answer.setContent(ANSWER_CONTENT);
+        answer = answerRepository.save(answer);
+
+        Question question = new Question();
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question.setAnswer(answer);
+        question = questionRepository.save(question);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        Answer fetchedAnswer = answerRepository.findById(answer.getId()).orElse(null);
+        assertThat(fetchedAnswer).isNotNull();
+        questionService.likeAnswer(user1, fetchedAnswer);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getAnswer()).isNotNull();
+        assertThat(fetchedQuestion.getAnswer().getLikesCount()).isEqualTo(1);
+
+        List<AnswerLike> fetchedLikes = answerLikeRepository.findByUser(user1);
+        assertThat(fetchedLikes)
+            .filteredOn(like -> like.getAnswer().equals(fetchedQuestion.getAnswer()))
+            .hasSize(1);
     }
 
-    private void setUpMocking_answerRepository_save() {
-        when(answerRepository.save(any(Answer.class)))
-            .thenAnswer(invocation -> {
-                Answer answer = invocation.getArgument(0);
-                answer.setId(QUESTION_ID);
-                return answer;
-            });
+    @Test
+    public void testLikeAnswer_anonymous() {
+        // setup
+        Answer answer = new Answer();
+        answer.setUser(user1);
+        answer.setContent(ANSWER_CONTENT);
+        answer = answerRepository.save(answer);
+
+        Question question = new Question();
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question.setAnswer(answer);
+        question = questionRepository.save(question);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        Answer fetchedAnswer = answerRepository.findById(answer.getId()).orElse(null);
+        assertThat(fetchedAnswer).isNotNull();
+        questionService.likeAnswer(null, fetchedAnswer);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getAnswer()).isNotNull();
+        assertThat(fetchedQuestion.getAnswer().getLikesCount()).isEqualTo(1);
     }
 
-    private void setUpMocking_attachmentRepository_findAllById() {
-        when(attachmentRepository.findAllById(anyList()))
-            .thenAnswer(invocation -> {
-                List<UUID> ids = invocation.getArgument(0);
-                return ids.stream().map(id -> {
-                    Attachment attachment = new Attachment();
-                    attachment.setId(id);
-                    return attachment;
-                }).toList();
-            });
+    @Test
+    public void testUnlikeAnswer() {
+        // setup
+        Answer answer = new Answer();
+        answer.setUser(user1);
+        answer.setContent(ANSWER_CONTENT);
+        answer.setLikesCount(1);
+        answer = answerRepository.save(answer);
+
+        AnswerLike like = new AnswerLike();
+        like.setUser(user1);
+        like.setAnswer(answer);
+        answerLikeRepository.save(like);
+
+        Question question = new Question();
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question.setAnswer(answer);
+        question = questionRepository.save(question);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        Answer fetchedAnswer = answerRepository.findById(answer.getId()).orElse(null);
+        assertThat(fetchedAnswer).isNotNull();
+        questionService.unlikeAnswer(user1, fetchedAnswer);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getAnswer()).isNotNull();
+        assertThat(fetchedQuestion.getAnswer().getLikesCount()).isZero();
+
+        List<AnswerLike> fetchedLikes = answerLikeRepository.findByUser(user1);
+        assertThat(fetchedLikes)
+            .filteredOn(fetchedLike -> fetchedLike.getAnswer().equals(fetchedQuestion.getAnswer()))
+            .isEmpty();
+    }
+
+    @Test
+    public void testDeleteQuestion_byId() {
+        // the byId delete is only called by admins, so any question can be deleted
+
+        // setup
+        Answer answer = new Answer();
+        answer.setUser(user1);
+        answer.setContent(ANSWER_CONTENT);
+        answer = answerRepository.save(answer);
+
+        AnswerLike like = new AnswerLike();
+        like.setUser(user1);
+        like.setAnswer(answer);
+        like = answerLikeRepository.save(like);
+
+        Question question = new Question();
+        question.setAnswer(answer);
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question = questionRepository.save(question);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        questionService.delete(question.getId());
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        // all the stuff above should be gone when the question is deleted
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNull();
+
+        Answer fetchedAnswer = answerRepository.findById(answer.getId()).orElse(null);
+        assertThat(fetchedAnswer).isNull();
+
+        AnswerLike fetchedLike = answerLikeRepository.findById(like.getId()).orElse(null);
+        assertThat(fetchedLike).isNull();
+    }
+
+    @Test
+    public void testDeleteQuestion_withUser() {
+        // this is the delete method called by users,
+        // they can only delete questions owned by them and only when the question is not published
+
+        // setup
+        Answer answer1 = new Answer();
+        answer1.setUser(user1);
+        answer1.setContent(ANSWER_CONTENT);
+        answer1 = answerRepository.save(answer1);
+
+        AnswerLike like1 = new AnswerLike();
+        like1.setUser(user1);
+        like1.setAnswer(answer1);
+        like1 = answerLikeRepository.save(like1);
+
+        // q1: current user, not published -> deletable
+        Question question1 = new Question();
+        question1.setAnswer(answer1);
+        question1.setUser(user1);
+        question1.setCampus(QUESTION_CAMPUS);
+        question1.setContent(QUESTION_CONTENT);
+        question1 = questionRepository.save(question1);
+
+        // q2: other user -> not deletable
+        Question question2 = new Question();
+        question2.setUser(user2);
+        question2.setCampus(QUESTION_CAMPUS);
+        question2.setContent(QUESTION_CONTENT);
+        question2 = questionRepository.save(question2);
+
+        // q3: published -> not deletable
+        Question question3 = new Question();
+        question3.setUser(user1);
+        question3.setCampus(QUESTION_CAMPUS);
+        question3.setContent(QUESTION_CONTENT);
+        question3.setPublished(true);
+        question3 = questionRepository.save(question3);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        questionService.delete(user1, question1.getId());
+        questionService.delete(user1, question2.getId());
+        questionService.delete(user1, question3.getId());
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Answer fetchedAnswer1 = answerRepository.findById(answer1.getId()).orElse(null);
+        assertThat(fetchedAnswer1).isNull();
+
+        AnswerLike fetchedLike1 = answerLikeRepository.findById(like1.getId()).orElse(null);
+        assertThat(fetchedLike1).isNull();
+
+        Question fetchedQuestion1 = questionRepository.findById(question1.getId()).orElse(null);
+        assertThat(fetchedQuestion1).isNull();
+
+        Question fetchedQuestion2 = questionRepository.findById(question2.getId()).orElse(null);
+        assertThat(fetchedQuestion2).isNotNull();
+
+        Question fetchedQuestion3 = questionRepository.findById(question3.getId()).orElse(null);
+        assertThat(fetchedQuestion3).isNotNull();
+    }
+
+    @Test
+    public void testDeleteAnswer() {
+        // setup
+        Answer answer = new Answer();
+        answer.setUser(user1);
+        answer.setContent(ANSWER_CONTENT);
+        answer = answerRepository.save(answer);
+
+        AnswerLike like = new AnswerLike();
+        like.setUser(user1);
+        like.setAnswer(answer);
+        like = answerLikeRepository.save(like);
+
+        Question question = new Question();
+        question.setAnswer(answer);
+        question.setUser(user1);
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question.setPublished(true);
+        question = questionRepository.save(question);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        questionService.deleteAnswer(fetchedQuestion);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getAnswer()).isNull();
+
+        Answer fetchedAnswer = answerRepository.findById(answer.getId()).orElse(null);
+        assertThat(fetchedAnswer).isNull();
+
+        AnswerLike fetchedLike = answerLikeRepository.findById(like.getId()).orElse(null);
+        assertThat(fetchedLike).isNull();
     }
 }

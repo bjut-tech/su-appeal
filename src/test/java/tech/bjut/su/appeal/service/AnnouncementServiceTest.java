@@ -1,147 +1,215 @@
 package tech.bjut.su.appeal.service;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import tech.bjut.su.appeal.dto.AnnouncementCreateDto;
 import tech.bjut.su.appeal.entity.Announcement;
 import tech.bjut.su.appeal.entity.Attachment;
 import tech.bjut.su.appeal.entity.User;
+import tech.bjut.su.appeal.enums.UserRoleEnum;
 import tech.bjut.su.appeal.repository.AnnouncementRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
+import tech.bjut.su.appeal.repository.UserRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@DataJpaTest
+@ActiveProfiles("test")
+@Import(AnnouncementService.class)
+@Transactional
 public class AnnouncementServiceTest {
 
-    @Mock
+    @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
     private AnnouncementRepository announcementRepository;
 
-    @Mock
+    @Autowired
     private AttachmentRepository attachmentRepository;
 
-    @InjectMocks
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private AnnouncementService announcementService;
 
     // The test data
     private User user;
 
-    private static final long ANNOUNCEMENT_ID = 1;
-    private static final String USER_UID = "user";
-    private static final String DTO_TITLE = "title";
-    private static final String DTO_CONTENT = "content";
-    private static final UUID DTO_ATTACHMENT_ID = UUID.randomUUID();
+    private static final String USER_UID = "user1";
+    private static final String ANNOUNCEMENT_TITLE = "title";
+    private static final String ANNOUNCEMENT_CONTENT = "content";
 
     @BeforeEach
     public void setUp() {
         user = new User();
         user.setUid(USER_UID);
+        user.setRole(UserRoleEnum.STUDENT);
+
+        user = userRepository.save(user);
     }
 
     @Test
     public void testCreate_noAttachment() {
-        // set up mocking
-        setUpMocking_announcementRepository_save();
-
         // execute
         AnnouncementCreateDto dto = new AnnouncementCreateDto();
-        dto.setTitle(DTO_TITLE);
-        dto.setContent(DTO_CONTENT);
+        dto.setTitle(ANNOUNCEMENT_TITLE);
+        dto.setContent(ANNOUNCEMENT_CONTENT);
 
-        Announcement res = announcementService.create(user, dto);
+        Announcement announcement = announcementService.create(user, dto);
 
-        // verify
-        assertThat(res).isNotNull();
-        assertThat(res.getId()).isGreaterThan(0);
-        assertThat(res.getUser()).isEqualTo(user);
-        assertThat(res.getTitle()).isEqualTo(DTO_TITLE);
-        assertThat(res.getContent()).isEqualTo(DTO_CONTENT);
-        assertThat(res.getAttachments()).isNullOrEmpty();
-        verify(announcementRepository, times(1)).save(any(Announcement.class));
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNotNull();
+        assertThat(fetchedAnnouncement.getUser()).isEqualTo(user);
+        assertThat(fetchedAnnouncement.getTitle()).isEqualTo(ANNOUNCEMENT_TITLE);
+        assertThat(fetchedAnnouncement.getContent()).isEqualTo(ANNOUNCEMENT_CONTENT);
+        assertThat(fetchedAnnouncement.getAttachments()).isNullOrEmpty();
+        assertThat(fetchedAnnouncement.isPinned()).isFalse(); // should not be pinned by default
     }
 
     @Test
-    public void testCreate_oneAttachment() {
-        // setup mocking
-        setUpMocking_announcementRepository_save();
-        setUpMocking_attachmentRepository_findAllById();
+    public void testCreate_canSaveAttachments() {
+        // setup
+        Attachment attachment = new Attachment();
+        attachment.setSize(0);
+        attachment = attachmentRepository.save(attachment);
 
-        // execute
         AnnouncementCreateDto dto = new AnnouncementCreateDto();
-        dto.setTitle(DTO_TITLE);
-        dto.setContent(DTO_CONTENT);
-        dto.setAttachmentIds(List.of(DTO_ATTACHMENT_ID));
+        dto.setTitle(ANNOUNCEMENT_TITLE);
+        dto.setContent(ANNOUNCEMENT_CONTENT);
+        dto.setAttachmentIds(List.of(attachment.getId()));
 
-        Announcement res = announcementService.create(user, dto);
+        Announcement announcement = announcementService.create(user, dto);
 
-        // verify
-        assertThat(res).isNotNull();
-        assertThat(res.getAttachments()).hasSize(1);
-        assertThat(res.getAttachments().get(0).getId()).isEqualTo(DTO_ATTACHMENT_ID);
-        verify(announcementRepository, times(1)).save(any(Announcement.class));
-        verify(attachmentRepository, times(1)).findAllById(anyList());
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNotNull();
+        assertThat(fetchedAnnouncement.getUser()).isEqualTo(user);
+        assertThat(fetchedAnnouncement.getTitle()).isEqualTo(ANNOUNCEMENT_TITLE);
+        assertThat(fetchedAnnouncement.getContent()).isEqualTo(ANNOUNCEMENT_CONTENT);
+        assertThat(fetchedAnnouncement.getAttachments()).containsExactly(attachment);
+        assertThat(fetchedAnnouncement.isPinned()).isFalse(); // should not be pinned by default
     }
 
     @Test
     public void testSetPinned_setToTrue() {
-        // setup mocking
-        setUpMocking_announcementRepository_save();
+        // setup
+        Announcement announcement = new Announcement();
+        announcement.setUser(user);
+        announcement.setTitle(ANNOUNCEMENT_TITLE);
+        announcement.setContent(ANNOUNCEMENT_CONTENT);
+        announcement.setPinned(false);
+        announcementRepository.save(announcement);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
 
         // execute
-        Announcement announcement = new Announcement();
-        announcement.setPinned(false);
-
         announcementService.setPinned(announcement, true);
 
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
         // verify
-        assertThat(announcement.isPinned()).isTrue();
-        verify(announcementRepository, times(1)).save(announcement);
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNotNull();
+        assertThat(fetchedAnnouncement.isPinned()).isTrue();
     }
 
     @Test
     public void testSetPinned_setToFalse() {
-        // setup mocking
-        setUpMocking_announcementRepository_save();
+        // setup
+        Announcement announcement = new Announcement();
+        announcement.setUser(user);
+        announcement.setTitle(ANNOUNCEMENT_TITLE);
+        announcement.setContent(ANNOUNCEMENT_CONTENT);
+        announcement.setPinned(true);
+        announcementRepository.save(announcement);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
 
         // execute
-        Announcement announcement = new Announcement();
-        announcement.setPinned(true);
-
         announcementService.setPinned(announcement, false);
 
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
         // verify
-        assertThat(announcement.isPinned()).isFalse();
-        verify(announcementRepository, times(1)).save(announcement);
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNotNull();
+        assertThat(fetchedAnnouncement.isPinned()).isFalse();
     }
 
-    private void setUpMocking_announcementRepository_save() {
-        when(announcementRepository.save(any(Announcement.class)))
-            .thenAnswer(invocation -> {
-                Announcement announcement = invocation.getArgument(0);
-                announcement.setId(ANNOUNCEMENT_ID);
-                return announcement;
-            });
+    @Test
+    public void testDelete_byId() {
+        // setup
+        Announcement announcement = new Announcement();
+        announcement.setUser(user);
+        announcement.setTitle(ANNOUNCEMENT_TITLE);
+        announcement.setContent(ANNOUNCEMENT_CONTENT);
+        announcement = announcementRepository.save(announcement);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        announcementService.delete(announcement.getId());
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // verify
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNull();
     }
 
-    private void setUpMocking_attachmentRepository_findAllById() {
-        when(attachmentRepository.findAllById(anyList()))
-            .thenAnswer(invocation -> {
-                List<UUID> ids = invocation.getArgument(0);
-                return ids.stream().map(id -> {
-                    Attachment attachment = new Attachment();
-                    attachment.setId(id);
-                    return attachment;
-                }).toList();
-            });
+    @Test
+    public void testDelete_byEntity() {
+        // setup
+        Announcement announcement = new Announcement();
+        announcement.setUser(user);
+        announcement.setTitle(ANNOUNCEMENT_TITLE);
+        announcement.setContent(ANNOUNCEMENT_CONTENT);
+        announcement = announcementRepository.save(announcement);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        announcementService.delete(announcement);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // verify
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNull();
     }
 }

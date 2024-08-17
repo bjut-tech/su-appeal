@@ -10,6 +10,9 @@ spring:
     console:
       enabled: false
 app:
+  auth:
+    admin:
+      - admin
   store:
     path: ./data/uploads
   frontend: http://localhost:5173
