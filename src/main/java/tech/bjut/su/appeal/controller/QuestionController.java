@@ -130,11 +130,7 @@ public class QuestionController {
     @JsonView(UserViews.Private.class)
     public Question store(@Valid @RequestBody QuestionCreateDto dto) {
         User user = securityService.user();
-        if (user == null) {
-            if (dto.getUid().isBlank()) {
-                dto.setUid("anonymous");
-                dto.setName(i18nHelper.get("user.anonymous-name"));
-            }
+        if (user == null && !dto.getUid().isBlank()) {
             user = userService.findOrCreate(dto.getUid(), dto.getName());
         }
 
