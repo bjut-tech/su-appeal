@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import tech.bjut.su.appeal.entity.Attachment;
 import tech.bjut.su.appeal.service.AttachmentService;
 import tech.bjut.su.appeal.service.SecurityService;
+import tech.bjut.su.appeal.util.I18nHelper;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,14 +27,18 @@ import java.util.UUID;
 @RequestMapping("/attachments")
 public class AttachmentController {
 
+    private final I18nHelper i18nHelper;
+
     private final AttachmentService service;
 
     private final SecurityService securityService;
 
     public AttachmentController(
+        I18nHelper i18nHelper,
         AttachmentService service,
         SecurityService securityService
     ) {
+        this.i18nHelper = i18nHelper;
         this.service = service;
         this.securityService = securityService;
     }
@@ -45,7 +50,7 @@ public class AttachmentController {
     ) {
         if (!securityService.hasAuthority("ADMIN")) {
             if (file.getSize() > 1024 * 1024 * 10) {
-                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "file too large");
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, i18nHelper.get("attachment.file-too-large"));
             }
 
             try {
@@ -54,13 +59,13 @@ public class AttachmentController {
                 String type = tika.detect(stream, file.getOriginalFilename());
 
                 if (!type.startsWith("image/")) {
-                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "file type not allowed");
+                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, i18nHelper.get("attachment.invalid-file-type"));
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         } else if (file.getSize() > 1024 * 1024 * 100) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "file too large");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, i18nHelper.get("attachment.file-too-large"));
         }
 
         if (name == null || name.isEmpty()) {
@@ -84,7 +89,7 @@ public class AttachmentController {
                 .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic().immutable())
                 .body(service.getResource(attachment));
         } catch (FileNotFoundException | NoSuchElementException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("attachment.not-found"));
         }
     }
 
@@ -97,7 +102,7 @@ public class AttachmentController {
                 .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic().immutable())
                 .body(service.getThumbnail(attachment));
         } catch (IOException | NoSuchElementException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("attachment.not-found"));
         }
     }
 }

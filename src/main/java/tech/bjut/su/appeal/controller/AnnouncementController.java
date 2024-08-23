@@ -14,19 +14,24 @@ import tech.bjut.su.appeal.entity.Announcement;
 import tech.bjut.su.appeal.jsonview.UserViews;
 import tech.bjut.su.appeal.service.AnnouncementService;
 import tech.bjut.su.appeal.service.SecurityService;
+import tech.bjut.su.appeal.util.I18nHelper;
 
 @RestController
 @RequestMapping("/announcements")
 public class AnnouncementController {
+
+    private final I18nHelper i18nHelper;
 
     private final AnnouncementService service;
 
     private final SecurityService securityService;
 
     public AnnouncementController(
+        I18nHelper i18nHelper,
         AnnouncementService service,
         SecurityService securityService
     ) {
+        this.i18nHelper = i18nHelper;
         this.service = service;
         this.securityService = securityService;
     }
@@ -43,7 +48,7 @@ public class AnnouncementController {
         }
 
         MappingJacksonValue value = new MappingJacksonValue(dto);
-        if (securityService.hasAuthority("ADMIN")){
+        if (securityService.hasAuthority("ADMIN")) {
             value.setSerializationView(UserViews.Admin.class);
         } else {
             value.setSerializationView(UserViews.Public.class);
@@ -63,7 +68,7 @@ public class AnnouncementController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public void pin(@PathVariable Long id) {
         Announcement announcement = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("announcement.not-found"))
         );
 
         service.setPinned(announcement, true);
@@ -73,7 +78,7 @@ public class AnnouncementController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public void unpin(@PathVariable Long id) {
         Announcement announcement = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("announcement.not-found"))
         );
 
         service.setPinned(announcement, false);

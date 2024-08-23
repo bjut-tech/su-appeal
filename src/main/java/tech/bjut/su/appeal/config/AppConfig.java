@@ -14,12 +14,4 @@ import java.util.Locale;
 @EnableCaching
 @EnableScheduling
 @EnableConfigurationProperties(AppProperties.class)
-public class AppConfig {
-
-    @Bean
-    public LocaleResolver localeResolver() {
-        FixedLocaleResolver localeResolver = new FixedLocaleResolver();
-        localeResolver.setDefaultLocale(new Locale("zh", "CN"));
-        return localeResolver;
-    }
-}
+public class AppConfig {}

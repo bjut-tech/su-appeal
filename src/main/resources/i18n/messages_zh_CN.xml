@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+  <entry key="announcement.not-found">找不到公告</entry>
+  <entry key="announcement-category.not-found">找不到公告类别</entry>
+  <entry key="answer.not-found">找不到答复</entry>
+  <entry key="attachment.not-found">找不到附件</entry>
+  <entry key="attachment.file-too-large">文件过大</entry>
+  <entry key="attachment.invalid-file-type">文件类型不支持</entry>
+  <entry key="auth.account-locked">账号暂时被锁定</entry>
+  <entry key="auth.invalid-credentials">用户名或密码无效</entry>
+  <entry key="auth.cas.parse-error">解析统一认证响应失败</entry>
+  <entry key="question.not-found">找不到反馈</entry>
+  <entry key="user.anonymous-name">匿名用户</entry>
+  <entry key="user.not-found">找不到用户</entry>
+</properties>

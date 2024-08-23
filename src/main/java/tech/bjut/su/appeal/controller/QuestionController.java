@@ -18,6 +18,7 @@ import tech.bjut.su.appeal.jsonview.UserViews;
 import tech.bjut.su.appeal.service.QuestionService;
 import tech.bjut.su.appeal.service.SecurityService;
 import tech.bjut.su.appeal.service.UserService;
+import tech.bjut.su.appeal.util.I18nHelper;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,8 @@ import java.util.Optional;
 @RequestMapping("/questions")
 public class QuestionController {
 
+    private final I18nHelper i18nHelper;
+
     private final QuestionService service;
 
     private final UserService userService;
@@ -35,10 +38,12 @@ public class QuestionController {
     private final SecurityService securityService;
 
     public QuestionController(
+        I18nHelper i18nHelper,
         QuestionService service,
         UserService userService,
         SecurityService securityService
     ) {
+        this.i18nHelper = i18nHelper;
         this.service = service;
         this.userService = userService;
         this.securityService = securityService;
@@ -118,7 +123,7 @@ public class QuestionController {
             return value;
         }
 
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found");
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"));
     }
 
     @PostMapping("")
@@ -128,7 +133,7 @@ public class QuestionController {
         if (user == null) {
             if (dto.getUid().isBlank()) {
                 dto.setUid("anonymous");
-                dto.setName("匿名用户");
+                dto.setName(i18nHelper.get("user.anonymous-name"));
             }
             user = userService.findOrCreate(dto.getUid(), dto.getName());
         }
@@ -140,7 +145,7 @@ public class QuestionController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public void publish(@PathVariable Long id) {
         Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"))
         );
 
         service.setPublished(question, true);
@@ -150,7 +155,7 @@ public class QuestionController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public void unpublish(@PathVariable Long id) {
         Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"))
         );
 
         service.setPublished(question, false);
@@ -175,7 +180,7 @@ public class QuestionController {
         @Valid @RequestBody QuestionAnswerDto dto
     ) {
         Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"))
         );
 
         return service.answer(question, securityService.user(), dto);
@@ -185,7 +190,7 @@ public class QuestionController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public void deleteAnswer(@PathVariable Long id) {
         Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found")
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"))
         );
 
         service.deleteAnswer(question);
@@ -200,7 +205,7 @@ public class QuestionController {
     @PostMapping("/{id}/answer/like")
     public void likeAnswer(@PathVariable Long id) {
         Answer answer = service.findAnswerOf(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found")
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("answer.not-found"))
         );
 
         service.likeAnswer(securityService.user(), answer);
@@ -210,7 +215,7 @@ public class QuestionController {
     @PreAuthorize("isAuthenticated()")
     public void unlikeAnswer(@PathVariable Long id) {
         Answer answer = service.findAnswerOf(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found")
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("answer.not-found"))
         );
 
         service.unlikeAnswer(securityService.user(), answer);
