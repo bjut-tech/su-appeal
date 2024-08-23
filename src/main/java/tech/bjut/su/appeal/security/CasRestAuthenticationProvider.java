@@ -37,9 +37,10 @@ public class CasRestAuthenticationProvider implements AuthenticationProvider {
     private static final Logger logger = LoggerFactory.getLogger(CasRestAuthenticationProvider.class);
 
     public CasRestAuthenticationProvider(
+        InsecureRestTemplate restTemplate,
         UserService userService
     ) {
-        this.restTemplate = InsecureRestTemplate.get();
+        this.restTemplate = restTemplate;
         this.userService = userService;
     }
 

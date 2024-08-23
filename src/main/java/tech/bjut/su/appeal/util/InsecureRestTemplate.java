@@ -9,15 +9,22 @@ import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
 
-public class InsecureRestTemplate {
+@Component
+public class InsecureRestTemplate extends RestTemplate {
+
+    public InsecureRestTemplate() {
+        super(getInsecureRequestFactory());
+    }
 
     @SneakyThrows
-    public static RestTemplate get() {
+    private static ClientHttpRequestFactory getInsecureRequestFactory() {
         SSLContext sslContext = SSLContextBuilder.create()
             .loadTrustMaterial(null, (x509Certificates, s) -> true)
             .build();
@@ -38,6 +45,6 @@ public class InsecureRestTemplate {
         HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
         requestFactory.setHttpClient(httpClient);
 
-        return new RestTemplate(requestFactory);
+        return requestFactory;
     }
 }
