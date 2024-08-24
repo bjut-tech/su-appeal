@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 @JsonView(UserViews.Public.class)
 public class Attachment {
     @Id
