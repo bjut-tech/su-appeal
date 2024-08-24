@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.KeysetScrollPosition;
 import org.springframework.data.domain.Window;
 import org.springframework.lang.Nullable;
@@ -74,12 +75,12 @@ public class QuestionService {
     }
 
     @Transactional
-    public Question create(User user, QuestionCreateDto dto) {
+    public Question create(@Nullable User user, QuestionCreateDto dto) {
         Question question = new Question();
         question.setUser(user);
-        question.setContact(dto.getContact());
+        question.setContact(StringUtils.stripToEmpty(dto.getContact()));
         question.setCampus(dto.getCampus());
-        question.setContent(dto.getContent());
+        question.setContent(StringUtils.stripToEmpty(dto.getContent()));
 
         if (dto.getAttachmentIds() != null && !dto.getAttachmentIds().isEmpty()) {
             List<Attachment> existingAttachments = attachmentRepository.findAllById(dto.getAttachmentIds());
@@ -117,7 +118,7 @@ public class QuestionService {
         }
 
         answer.setUser(user);
-        answer.setContent(dto.getContent());
+        answer.setContent(StringUtils.stripToEmpty(dto.getContent()));
 
         if (dto.getAttachmentIds() != null && !dto.getAttachmentIds().isEmpty()) {
             List<Attachment> existingAttachments = attachmentRepository.findAllById(dto.getAttachmentIds());

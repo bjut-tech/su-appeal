@@ -11,7 +11,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import tech.bjut.su.appeal.jsonview.UserViews;
 
 import java.time.Instant;
-import java.util.List;
 
 @Entity
 @Getter
@@ -19,29 +18,16 @@ import java.util.List;
 @NoArgsConstructor
 @EqualsAndHashCode(of = "id")
 @JsonView(UserViews.Public.class)
-public class Announcement {
+public class AnnouncementCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JsonView(UserViews.Admin.class)
-    private User user;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    private AnnouncementCategory category;
-
     @Column(nullable = false)
-    private String title;
+    private String name;
 
-    @Column(nullable = false, length = 65535)
-    private String content;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable
-    private List<Attachment> attachments;
-
-    private boolean pinned = false;
+    @Column(length = 65535)
+    private String description;
 
     @CreationTimestamp
     private Instant createdAt;

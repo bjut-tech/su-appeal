@@ -10,6 +10,7 @@
   <entry key="auth.account-locked">Account temporarily locked</entry>
   <entry key="auth.invalid-credentials">Invalid credentials</entry>
   <entry key="auth.cas.parse-error">Failed to parse CAS response</entry>
+  <entry key="entity.not-found">Entity not found</entry>
   <entry key="question.not-found">Feedback not found</entry>
   <entry key="user.anonymous-name">Anonymous User</entry>
   <entry key="user.not-found">User not found</entry>

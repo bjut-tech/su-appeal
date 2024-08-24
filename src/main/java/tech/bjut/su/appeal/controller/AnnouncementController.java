@@ -57,11 +57,38 @@ public class AnnouncementController {
         return value;
     }
 
+    @GetMapping("/{id}")
+    public MappingJacksonValue show(@PathVariable Long id) {
+        Announcement announcement = service.find(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("announcement.not-found"))
+        );
+
+        MappingJacksonValue value = new MappingJacksonValue(announcement);
+        if (securityService.hasAuthority("ADMIN")) {
+            value.setSerializationView(UserViews.Admin.class);
+        } else {
+            value.setSerializationView(UserViews.Public.class);
+        }
+
+        return value;
+    }
+
     @PostMapping("")
     @PreAuthorize("hasAuthority('ADMIN')")
     @JsonView(UserViews.Private.class)
     public Announcement store(@Valid @RequestBody AnnouncementCreateDto dto) {
         return service.create(securityService.user(), dto);
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @JsonView(UserViews.Private.class)
+    public Announcement update(@PathVariable Long id, @Valid @RequestBody AnnouncementCreateDto dto) {
+        Announcement announcement = service.find(id).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("announcement.not-found"))
+        );
+
+        return service.update(announcement, securityService.user(), dto);
     }
 
     @PostMapping("/{id}/pin")
