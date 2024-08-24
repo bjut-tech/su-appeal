@@ -75,10 +75,14 @@ public class AttachmentService {
         }
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        Thumbnails.of(image)
-            .size(400, 400)
-            .crop(Positions.CENTER)
-            .outputQuality(0.8)
+        Thumbnails.Builder<BufferedImage> builder = Thumbnails.of(image);
+        if (image.getWidth() > 400 || image.getHeight() > 400) {
+            builder.size(400, 400)
+                .crop(Positions.CENTER);
+        } else {
+            builder.scale(1);
+        }
+        builder.outputQuality(0.8)
             .outputFormat("jpg")
             .toOutputStream(os);
 
