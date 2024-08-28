@@ -21,7 +21,7 @@ public class QuestionCreateDto {
     @Size(max = 255)
     private String contact;
 
-    @NotNull(message = "不能为空")
+    @NotNull(message = "{jakarta.validation.constraints.NotBlank.message}")
     private CampusEnum campus;
 
     @NotBlank

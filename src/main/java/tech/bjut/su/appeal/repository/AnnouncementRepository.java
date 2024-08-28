@@ -12,9 +12,9 @@ import java.util.List;
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
 
     @EntityGraph(attributePaths = {"user", "attachments"})
-    List<Announcement> findByPinnedTrueOrderByIdDesc();
+    List<Announcement> findByPinnedTrueAndHiddenFalseOrderByIdDesc();
 
-    Window<Announcement> findFirst10ByPinnedFalseOrderByIdDesc(KeysetScrollPosition position);
+    Window<Announcement> findFirst10ByPinnedFalseAndHiddenFalseOrderByIdDesc(KeysetScrollPosition position);
 
     @Query(value = "SELECT DISTINCT a.id FROM Announcement p JOIN p.attachments a")
     List<String> findAllAttachmentIdsUsed();

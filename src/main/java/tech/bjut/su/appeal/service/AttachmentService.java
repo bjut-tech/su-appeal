@@ -13,10 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import tech.bjut.su.appeal.config.AppProperties;
 import tech.bjut.su.appeal.entity.Attachment;
-import tech.bjut.su.appeal.repository.AnnouncementRepository;
-import tech.bjut.su.appeal.repository.AnswerRepository;
-import tech.bjut.su.appeal.repository.AttachmentRepository;
-import tech.bjut.su.appeal.repository.QuestionRepository;
+import tech.bjut.su.appeal.repository.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -124,16 +121,19 @@ public class AttachmentService {
         AnnouncementRepository repository1 = context.getBean(AnnouncementRepository.class);
         filesUsed.addAll(repository1.findAllAttachmentIdsUsed());
 
-        QuestionRepository repository2 = context.getBean(QuestionRepository.class);
+        AnnouncementCarouselRepository repository2 = context.getBean(AnnouncementCarouselRepository.class);
         filesUsed.addAll(repository2.findAllAttachmentIdsUsed());
 
-        AnswerRepository repository3 = context.getBean(AnswerRepository.class);
+        QuestionRepository repository3 = context.getBean(QuestionRepository.class);
         filesUsed.addAll(repository3.findAllAttachmentIdsUsed());
+
+        AnswerRepository repository4 = context.getBean(AnswerRepository.class);
+        filesUsed.addAll(repository4.findAllAttachmentIdsUsed());
 
         logger.trace("Files used: {}", filesUsed);
 
         List<String> filesToRemove = new ArrayList<>();
-        long timeThreshold = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000;
+        long timeThreshold = System.currentTimeMillis() - 24 * 60 * 60 * 1000;
         for (String fileName : Objects.requireNonNull(storePath.toFile().list())) {
             File file = storePath.resolve(fileName).toFile();
 

@@ -6,12 +6,11 @@ import org.springframework.data.domain.KeysetScrollPosition;
 import org.springframework.data.domain.Window;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import tech.bjut.su.appeal.dto.AnnouncementCarouselCreateDto;
 import tech.bjut.su.appeal.dto.AnnouncementCategoryCreateDto;
 import tech.bjut.su.appeal.dto.AnnouncementCreateDto;
-import tech.bjut.su.appeal.entity.Announcement;
-import tech.bjut.su.appeal.entity.AnnouncementCategory;
-import tech.bjut.su.appeal.entity.Attachment;
-import tech.bjut.su.appeal.entity.User;
+import tech.bjut.su.appeal.entity.*;
+import tech.bjut.su.appeal.repository.AnnouncementCarouselRepository;
 import tech.bjut.su.appeal.repository.AnnouncementCategoryRepository;
 import tech.bjut.su.appeal.repository.AnnouncementRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
@@ -25,28 +24,32 @@ public class AnnouncementService {
 
     private final AnnouncementRepository repository;
 
+    private final AnnouncementCarouselRepository carouselRepository;
+
     private final AnnouncementCategoryRepository categoryRepository;
 
     private final AttachmentRepository attachmentRepository;
 
     public AnnouncementService(
         AnnouncementRepository repository,
+        AnnouncementCarouselRepository carouselRepository,
         AnnouncementCategoryRepository categoryRepository,
         AttachmentRepository attachmentRepository
     ) {
         this.repository = repository;
+        this.carouselRepository = carouselRepository;
         this.categoryRepository = categoryRepository;
         this.attachmentRepository = attachmentRepository;
     }
 
     public List<Announcement> getPinned() {
-        return repository.findByPinnedTrueOrderByIdDesc();
+        return repository.findByPinnedTrueAndHiddenFalseOrderByIdDesc();
     }
 
     public Window<Announcement> getPaginated(@Nullable String cursor) {
         KeysetScrollPosition position = CursorPagination.positionOf(cursor);
 
-        return repository.findFirst10ByPinnedFalseOrderByIdDesc(position);
+        return repository.findFirst10ByPinnedFalseAndHiddenFalseOrderByIdDesc(position);
     }
 
     public Optional<Announcement> find(Long id) {
@@ -123,5 +126,43 @@ public class AnnouncementService {
 
     public void deleteCategory(long id) {
         categoryRepository.deleteById(id);
+    }
+
+    public List<AnnouncementCarousel> getCarousels() {
+        return carouselRepository.findAll();
+    }
+
+    public AnnouncementCarousel getCarousel(long id) {
+        return carouselRepository.findById(id).orElseThrow();
+    }
+
+    @Transactional
+    public AnnouncementCarousel createCarousel(AnnouncementCarouselCreateDto dto) {
+        AnnouncementCarousel carousel = new AnnouncementCarousel();
+
+        Announcement announcement = repository.findById(dto.getAnnouncementId()).orElseThrow();
+        announcement.setHidden(true);
+        announcement = repository.save(announcement);
+        carousel.setAnnouncement(announcement);
+
+        if (dto.getCoverId() != null) {
+            Attachment cover = attachmentRepository.findById(dto.getCoverId()).orElse(null);
+            carousel.setCover(cover);
+        } else {
+            carousel.setCover(null);
+        }
+
+        return carouselRepository.save(carousel);
+    }
+
+    @Transactional
+    public void deleteCarousel(long id) {
+        AnnouncementCarousel carousel = carouselRepository.findById(id).orElseThrow();
+
+        Announcement announcement = carousel.getAnnouncement();
+        announcement.setHidden(false);
+        repository.save(announcement);
+
+        carouselRepository.deleteById(id);
     }
 }
