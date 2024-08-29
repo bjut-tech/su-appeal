@@ -21,7 +21,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.NoSuchElementException;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/attachments")
@@ -77,9 +76,8 @@ public class AttachmentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Resource> download(@PathVariable("id") UUID id) {
+    public ResponseEntity<Resource> download(@PathVariable("id") Attachment attachment) {
         try {
-            Attachment attachment = service.get(id);
             String filenameEncoded = URLEncoder.encode(attachment.getName(), StandardCharsets.UTF_8);
 
             return ResponseEntity.ok()
@@ -94,9 +92,8 @@ public class AttachmentController {
     }
 
     @GetMapping("/{id}/thumbnail")
-    public ResponseEntity<Resource> thumbnail(@PathVariable("id") UUID id) {
+    public ResponseEntity<Resource> thumbnail(@PathVariable("id") Attachment attachment) {
         try {
-            Attachment attachment = service.get(id);
             return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .cacheControl(CacheControl.maxAge(Duration.ofDays(30)).cachePublic().immutable())

@@ -1,22 +1,24 @@
 package tech.bjut.su.appeal.service;
 
+import jakarta.persistence.criteria.Expression;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.KeysetScrollPosition;
 import org.springframework.data.domain.Window;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
+import tech.bjut.su.appeal.dto.QuestionIndexDto;
 import tech.bjut.su.appeal.entity.*;
 import tech.bjut.su.appeal.repository.AnswerLikeRepository;
 import tech.bjut.su.appeal.repository.AnswerRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
-import tech.bjut.su.appeal.util.CursorPagination;
+import tech.bjut.su.appeal.util.CursorPaginationHelper;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class QuestionService {
@@ -40,30 +42,43 @@ public class QuestionService {
         this.attachmentRepository = attachmentRepository;
     }
 
-    public Window<Question> getPaginated(@Nullable String cursor) {
-        KeysetScrollPosition position = CursorPagination.positionOf(cursor);
+    public Window<Question> index(QuestionIndexDto dto) {
+        KeysetScrollPosition position = CursorPaginationHelper.positionOf(dto.getCursor());
+        Specification<Question> spec = Specification.allOf((root, query, builder) -> {
+            if (dto.getUser() == null) {
+                return null;
+            }
+            return builder.equal(root.get("user"), dto.getUser());
+        }, (root, query, builder) -> {
+            if (dto.getStatus() == null) {
+                return null;
+            }
+            return switch (dto.getStatus()) {
+                case NOT_REPLIED -> builder.isNull(root.get("answer"));
+                case NOT_PUBLISHED -> builder.and(
+                    builder.isNotNull(root.get("answer")),
+                    builder.isFalse(root.get("published"))
+                );
+                case PUBLISHED -> builder.isTrue(root.get("published"));
+            };
+        }, (root, query, builder) -> {
+            if (dto.getCampus() == null) {
+                return null;
+            }
+            return builder.equal(root.get("campus"), dto.getCampus());
+        }, (root, query, builder) -> {
+            String search = StringUtils.trimToEmpty(dto.getSearch());
+            if (search.isEmpty()) {
+                return null;
+            }
+            Expression<String> pattern = builder.concat(builder.concat(builder.literal("%"), search), builder.literal("%"));
+            return builder.or(
+                builder.like(root.get("content"), pattern),
+                builder.like(root.get("answer").get("content"), pattern)
+            );
+        });
 
-        return repository.findFirst10ByOrderByIdDesc(position);
-    }
-
-    public Window<Question> getPaginated(User user, @Nullable String cursor) {
-        KeysetScrollPosition position = CursorPagination.positionOf(cursor);
-
-        return repository.findFirst10ByUserOrderByIdDesc(user, position);
-    }
-
-    public Window<Question> getPublishedPaginated(@Nullable String cursor) {
-        KeysetScrollPosition position = CursorPagination.positionOf(cursor);
-
-        return repository.findFirst10ByPublishedTrueOrderByIdDesc(position);
-    }
-
-    public Optional<Question> find(Long id) {
-        return repository.findById(id);
-    }
-
-    public Optional<Question> find(User user, Long id) {
-        return repository.findByIdAndUser(id, user);
+        return repository.findAllPaginatedOrderByIdDesc(spec, 10, position);
     }
 
     public long countHistory(User user) {
@@ -95,16 +110,14 @@ public class QuestionService {
         repository.save(question);
     }
 
-    public void delete(Long id) {
-        repository.deleteById(id);
+    public void delete(Question question) {
+        repository.delete(question);
     }
 
-    public void delete(User user, Long id) {
-        repository.deleteByPublishedFalseAndIdAndUser(id, user);
-    }
-
-    public Optional<Answer> findAnswerOf(Long id) {
-        return answerRepository.findByQuestionId(id);
+    public void delete(User user, Question question) {
+        if (!question.isPublished() && question.getUser().equals(user)) {
+            repository.delete(question);
+        }
     }
 
     @Transactional

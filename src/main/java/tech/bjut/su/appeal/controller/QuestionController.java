@@ -11,9 +11,12 @@ import org.springframework.web.server.ResponseStatusException;
 import tech.bjut.su.appeal.dto.CursorPaginationDto;
 import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
+import tech.bjut.su.appeal.dto.QuestionIndexDto;
 import tech.bjut.su.appeal.entity.Answer;
 import tech.bjut.su.appeal.entity.Question;
 import tech.bjut.su.appeal.entity.User;
+import tech.bjut.su.appeal.enums.CampusEnum;
+import tech.bjut.su.appeal.enums.QuestionStatusEnum;
 import tech.bjut.su.appeal.jsonview.UserViews;
 import tech.bjut.su.appeal.service.QuestionService;
 import tech.bjut.su.appeal.service.SecurityService;
@@ -23,7 +26,6 @@ import tech.bjut.su.appeal.util.I18nHelper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/questions")
@@ -66,19 +68,22 @@ public class QuestionController {
     }
 
     @GetMapping("")
-    public MappingJacksonValue index(@RequestParam(required = false) String cursor) {
+    public MappingJacksonValue index(
+        @RequestParam(required = false) QuestionStatusEnum status,
+        @RequestParam(required = false) CampusEnum campus,
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) String cursor
+    ) {
         final boolean isAdmin = securityService.hasAuthority("ADMIN");
+        QuestionIndexDto request = new QuestionIndexDto();
+        request.setStatus(isAdmin ? status : QuestionStatusEnum.PUBLISHED);
+        request.setCampus(campus);
+        request.setSearch(search);
+        request.setCursor(cursor);
 
-        Window<Question> pagination;
-        if (isAdmin) {
-            pagination = service.getPaginated(cursor);
-        } else {
-            pagination = service.getPublishedPaginated(cursor);
-        }
-
-        CursorPaginationDto<Question> dto = new CursorPaginationDto<>(pagination);
-        MappingJacksonValue value = new MappingJacksonValue(dto);
-
+        Window<Question> pagination = service.index(request);
+        CursorPaginationDto<Question> response = new CursorPaginationDto<>(pagination);
+        MappingJacksonValue value = new MappingJacksonValue(response);
         if (isAdmin) {
             value.setSerializationView(UserViews.Admin.class);
         } else {
@@ -94,36 +99,34 @@ public class QuestionController {
     public CursorPaginationDto<Question> history(
         @RequestParam(required = false) String cursor
     ) {
-        Window<Question> pagination = service.getPaginated(securityService.user(), cursor);
+        QuestionIndexDto dto = new QuestionIndexDto();
+        dto.setUser(securityService.user());
+        dto.setCursor(cursor);
+
+        Window<Question> pagination = service.index(dto);
 
         return new CursorPaginationDto<>(pagination);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public MappingJacksonValue show(@PathVariable Long id) {
+    public MappingJacksonValue show(@PathVariable("id") Question question) {
         final boolean isAdmin = securityService.hasAuthority("ADMIN");
+        final boolean isOwn = question.getUser().equals(securityService.user());
 
-        Optional<Question> question;
+        if (!isAdmin && !question.isPublished() && !isOwn) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"));
+        }
+
+        MappingJacksonValue value = new MappingJacksonValue(question);
         if (isAdmin) {
-            question = service.find(id);
+            value.setSerializationView(UserViews.Admin.class);
+        } else if (isOwn) {
+            value.setSerializationView(UserViews.Private.class);
         } else {
-            question = service.find(securityService.user(), id);
+            value.setSerializationView(UserViews.Public.class);
         }
-
-        if (question.isPresent()) {
-            MappingJacksonValue value = new MappingJacksonValue(question.get());
-
-            if (isAdmin) {
-                value.setSerializationView(UserViews.Admin.class);
-            } else {
-                value.setSerializationView(UserViews.Private.class);
-            }
-
-            return value;
-        }
-
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"));
+        return value;
     }
 
     @PostMapping("")
@@ -139,56 +142,40 @@ public class QuestionController {
 
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public void publish(@PathVariable Long id) {
-        Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"))
-        );
-
+    public void publish(@PathVariable("id") Question question) {
         service.setPublished(question, true);
     }
 
     @DeleteMapping("/{id}/publish")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public void unpublish(@PathVariable Long id) {
-        Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"))
-        );
-
+    public void unpublish(@PathVariable("id") Question question) {
         service.setPublished(question, false);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable("id") Question question) {
         final boolean isAdmin = securityService.hasAuthority("ADMIN");
 
         if (isAdmin) {
-            service.delete(id);
+            service.delete(question);
         } else {
-            service.delete(securityService.user(), id);
+            service.delete(securityService.user(), question);
         }
     }
 
     @PostMapping("/{id}/answer")
     @PreAuthorize("hasAuthority('ADMIN')")
     public Question answer(
-        @PathVariable Long id,
+        @PathVariable("id") Question question,
         @Valid @RequestBody QuestionAnswerDto dto
     ) {
-        Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"))
-        );
-
         return service.answer(question, securityService.user(), dto);
     }
 
     @DeleteMapping("/{id}/answer")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public void deleteAnswer(@PathVariable Long id) {
-        Question question = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"))
-        );
-
+    public void deleteAnswer(@PathVariable("id") Question question) {
         service.deleteAnswer(question);
     }
 
@@ -199,21 +186,19 @@ public class QuestionController {
     }
 
     @PostMapping("/{id}/answer/like")
-    public void likeAnswer(@PathVariable Long id) {
-        Answer answer = service.findAnswerOf(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("answer.not-found"))
-        );
+    public void likeAnswer(@PathVariable("id") Question question) {
+        if (!question.isPublished()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"));
+        }
 
+        Answer answer = question.getAnswer();
         service.likeAnswer(securityService.user(), answer);
     }
 
     @DeleteMapping("/{id}/answer/like")
     @PreAuthorize("isAuthenticated()")
-    public void unlikeAnswer(@PathVariable Long id) {
-        Answer answer = service.findAnswerOf(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("answer.not-found"))
-        );
-
+    public void unlikeAnswer(@PathVariable("id") Question question) {
+        Answer answer = question.getAnswer();
         service.unlikeAnswer(securityService.user(), answer);
     }
 }

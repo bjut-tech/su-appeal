@@ -3,51 +3,47 @@ package tech.bjut.su.appeal.controller;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Window;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import tech.bjut.su.appeal.dto.AnnouncementCreateDto;
+import tech.bjut.su.appeal.dto.AnnouncementIndexDto;
 import tech.bjut.su.appeal.dto.CursorPaginationDto;
 import tech.bjut.su.appeal.entity.Announcement;
 import tech.bjut.su.appeal.jsonview.UserViews;
 import tech.bjut.su.appeal.service.AnnouncementService;
 import tech.bjut.su.appeal.service.SecurityService;
-import tech.bjut.su.appeal.util.I18nHelper;
 
 @RestController
 @RequestMapping("/announcements")
 public class AnnouncementController {
-
-    private final I18nHelper i18nHelper;
 
     private final AnnouncementService service;
 
     private final SecurityService securityService;
 
     public AnnouncementController(
-        I18nHelper i18nHelper,
         AnnouncementService service,
         SecurityService securityService
     ) {
-        this.i18nHelper = i18nHelper;
         this.service = service;
         this.securityService = securityService;
     }
 
     @GetMapping("")
     public MappingJacksonValue index(
+        @RequestParam(name = "category", required = false) Long categoryId,
+        @RequestParam(required = false) String search,
         @RequestParam(required = false) String cursor
     ) {
-        Window<Announcement> pagination = service.getPaginated(cursor);
+        AnnouncementIndexDto request = new AnnouncementIndexDto();
+        request.setCategoryId(categoryId);
+        request.setSearch(search);
+        request.setCursor(cursor);
 
-        CursorPaginationDto<Announcement> dto = new CursorPaginationDto<>(pagination);
-        if (cursor == null || cursor.isBlank()) {
-            dto.setPinned(service.getPinned());
-        }
-
-        MappingJacksonValue value = new MappingJacksonValue(dto);
+        Window<Announcement> pagination = service.index(request);
+        CursorPaginationDto<Announcement> response = new CursorPaginationDto<>(pagination, true);
+        MappingJacksonValue value = new MappingJacksonValue(response);
         if (securityService.hasAuthority("ADMIN")) {
             value.setSerializationView(UserViews.Admin.class);
         } else {
@@ -58,11 +54,7 @@ public class AnnouncementController {
     }
 
     @GetMapping("/{id}")
-    public MappingJacksonValue show(@PathVariable Long id) {
-        Announcement announcement = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("announcement.not-found"))
-        );
-
+    public MappingJacksonValue show(@PathVariable("id") Announcement announcement) {
         MappingJacksonValue value = new MappingJacksonValue(announcement);
         if (securityService.hasAuthority("ADMIN")) {
             value.setSerializationView(UserViews.Admin.class);
@@ -83,37 +75,25 @@ public class AnnouncementController {
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     @JsonView(UserViews.Private.class)
-    public Announcement update(@PathVariable Long id, @Valid @RequestBody AnnouncementCreateDto dto) {
-        Announcement announcement = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("announcement.not-found"))
-        );
-
+    public Announcement update(@PathVariable("id") Announcement announcement, @Valid @RequestBody AnnouncementCreateDto dto) {
         return service.update(announcement, securityService.user(), dto);
     }
 
     @PostMapping("/{id}/pin")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public void pin(@PathVariable Long id) {
-        Announcement announcement = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("announcement.not-found"))
-        );
-
+    public void pin(@PathVariable("id") Announcement announcement) {
         service.setPinned(announcement, true);
     }
 
     @DeleteMapping("/{id}/pin")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public void unpin(@PathVariable Long id) {
-        Announcement announcement = service.find(id).orElseThrow(
-            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("announcement.not-found"))
-        );
-
+    public void unpin(@PathVariable("id") Announcement announcement) {
         service.setPinned(announcement, false);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public void destroy(@PathVariable Long id) {
-        service.delete(id);
+    public void destroy(@PathVariable("id") Announcement announcement) {
+        service.delete(announcement);
     }
 }

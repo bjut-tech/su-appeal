@@ -4,11 +4,20 @@ spring:
     password:
     driver-class-name: org.h2.Driver
   jpa:
-    show-sql: true
+    show-sql: false
     database: h2
   h2:
     console:
       enabled: false
+logging:
+  level:
+    org:
+      hibernate:
+        sql: DEBUG
+    tech:
+      bjut:
+        su:
+          appeal: DEBUG
 app:
   auth:
     admin:

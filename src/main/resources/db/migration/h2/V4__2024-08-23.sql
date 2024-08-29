@@ -32,3 +32,6 @@ alter table "announcement"
 alter table "announcement"
     add constraint "announcement_category_id"
         foreign key ("category_id") references "announcement_category";
+
+create index "announcement_pinned_id"
+    on "announcement" ("pinned" desc, "id" desc);

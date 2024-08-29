@@ -26,7 +26,7 @@ public class Announcement {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JsonView(UserViews.Admin.class)
     private User user;
 

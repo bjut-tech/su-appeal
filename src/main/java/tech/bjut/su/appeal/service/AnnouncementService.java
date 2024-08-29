@@ -1,23 +1,24 @@
 package tech.bjut.su.appeal.service;
 
+import jakarta.persistence.criteria.Expression;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.KeysetScrollPosition;
 import org.springframework.data.domain.Window;
-import org.springframework.lang.Nullable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tech.bjut.su.appeal.dto.AnnouncementCarouselCreateDto;
 import tech.bjut.su.appeal.dto.AnnouncementCategoryCreateDto;
 import tech.bjut.su.appeal.dto.AnnouncementCreateDto;
+import tech.bjut.su.appeal.dto.AnnouncementIndexDto;
 import tech.bjut.su.appeal.entity.*;
 import tech.bjut.su.appeal.repository.AnnouncementCarouselRepository;
 import tech.bjut.su.appeal.repository.AnnouncementCategoryRepository;
 import tech.bjut.su.appeal.repository.AnnouncementRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
-import tech.bjut.su.appeal.util.CursorPagination;
+import tech.bjut.su.appeal.util.CursorPaginationHelper;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class AnnouncementService {
@@ -42,18 +43,26 @@ public class AnnouncementService {
         this.attachmentRepository = attachmentRepository;
     }
 
-    public List<Announcement> getPinned() {
-        return repository.findByPinnedTrueAndHiddenFalseOrderByIdDesc();
-    }
+    public Window<Announcement> index(AnnouncementIndexDto dto) {
+        KeysetScrollPosition position = CursorPaginationHelper.positionOf(dto.getCursor(), true);
+        Specification<Announcement> spec = Specification.allOf((root, query, builder) -> {
+            if (dto.getCategoryId() == null) {
+                return null;
+            }
+            return builder.equal(root.get("category").get("id"), dto.getCategoryId());
+        }, (root, query, builder) -> {
+            String search = StringUtils.trimToEmpty(dto.getSearch());
+            if (search.isEmpty()) {
+                return builder.equal(root.get("hidden"), false);
+            }
+            Expression<String> pattern = builder.concat(builder.concat(builder.literal("%"), search), builder.literal("%"));
+            return builder.or(
+                builder.like(root.get("title"), pattern),
+                builder.like(root.get("content"), pattern)
+            );
+        });
 
-    public Window<Announcement> getPaginated(@Nullable String cursor) {
-        KeysetScrollPosition position = CursorPagination.positionOf(cursor);
-
-        return repository.findFirst10ByPinnedFalseAndHiddenFalseOrderByIdDesc(position);
-    }
-
-    public Optional<Announcement> find(Long id) {
-        return repository.findById(id);
+        return repository.findAllPaginatedOrderByPinnedDescAndIdDesc(spec, 10, position);
     }
 
     @Transactional
@@ -90,20 +99,12 @@ public class AnnouncementService {
         repository.save(announcement);
     }
 
-    public void delete(long id) {
-        repository.deleteById(id);
-    }
-
     public void delete(Announcement announcement) {
         repository.delete(announcement);
     }
 
     public List<AnnouncementCategory> getCategories() {
         return categoryRepository.findAll();
-    }
-
-    public AnnouncementCategory getCategory(long id) {
-        return categoryRepository.findById(id).orElseThrow();
     }
 
     public AnnouncementCategory createCategory(AnnouncementCategoryCreateDto dto) {
@@ -115,25 +116,19 @@ public class AnnouncementService {
         return categoryRepository.save(category);
     }
 
-    public AnnouncementCategory updateCategory(long id, AnnouncementCategoryCreateDto dto) {
-        AnnouncementCategory category = categoryRepository.findById(id).orElseThrow();
-
+    public AnnouncementCategory updateCategory(AnnouncementCategory category, AnnouncementCategoryCreateDto dto) {
         category.setName(StringUtils.stripToEmpty(dto.getName()));
         category.setDescription(StringUtils.stripToEmpty(dto.getDescription()));
 
         return categoryRepository.save(category);
     }
 
-    public void deleteCategory(long id) {
-        categoryRepository.deleteById(id);
+    public void deleteCategory(AnnouncementCategory category) {
+        categoryRepository.delete(category);
     }
 
     public List<AnnouncementCarousel> getCarousels() {
         return carouselRepository.findAll();
-    }
-
-    public AnnouncementCarousel getCarousel(long id) {
-        return carouselRepository.findById(id).orElseThrow();
     }
 
     @Transactional
@@ -156,13 +151,11 @@ public class AnnouncementService {
     }
 
     @Transactional
-    public void deleteCarousel(long id) {
-        AnnouncementCarousel carousel = carouselRepository.findById(id).orElseThrow();
-
+    public void deleteCarousel(AnnouncementCarousel carousel) {
         Announcement announcement = carousel.getAnnouncement();
         announcement.setHidden(false);
         repository.save(announcement);
 
-        carouselRepository.deleteById(id);
+        carouselRepository.delete(carousel);
     }
 }

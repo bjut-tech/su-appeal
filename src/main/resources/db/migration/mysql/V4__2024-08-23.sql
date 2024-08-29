@@ -28,3 +28,6 @@ alter table announcement
     add column hidden bit not null default _binary '\0',
     add constraint announcement_category_id
         foreign key (category_id) references announcement_category (id);
+
+create index announcement_pinned_id
+    on announcement (pinned desc, id desc);
