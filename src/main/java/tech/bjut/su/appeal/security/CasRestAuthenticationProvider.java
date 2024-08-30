@@ -92,7 +92,7 @@ public class CasRestAuthenticationProvider implements AuthenticationProvider {
                     }
                 });
 
-                User user = userService.findOrCreate(uid, attributes);
+                User user = userService.findOrCreate(uid, attributes, true);
                 UserPrincipal principal = new UserPrincipal(user);
                 return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
 

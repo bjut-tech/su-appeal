@@ -35,19 +35,24 @@ public class UserService {
     }
 
     public User findOrCreate(String uid, String name) {
-        return findOrCreate(uid, Map.of("name", name));
+        return findOrCreate(uid, Map.of("name", name), false);
     }
 
-    public User findOrCreate(String uid, Map<String, String> attributes) {
+    public User findOrCreate(String uid, Map<String, String> attributes, boolean trusted) {
         User user = repository.findByUid(uid);
+        boolean isNew = false;
 
         if (user == null) {
             user = new User();
             user.setUid(uid);
+            isNew = true;
         }
         user.setRole(UserRoleEnum.STUDENT); // TODO: Actual role
-        user.setName(attributes.get("name"));
         user.setAdmin(adminList.contains(user.getUid()));
+
+        if (trusted || isNew) {
+            user.setName(attributes.get("name"));
+        }
 
         user = repository.save(user);
         return user;
