@@ -16,5 +16,6 @@ public class AnnouncementCarouselCreateDto {
     @JsonProperty("announcement")
     private Long announcementId;
 
+    @JsonProperty("cover")
     private UUID coverId;
 }

@@ -1,6 +1,5 @@
 package tech.bjut.su.appeal.service;
 
-import jakarta.persistence.criteria.Expression;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.KeysetScrollPosition;
 import org.springframework.data.domain.Window;
@@ -17,6 +16,7 @@ import tech.bjut.su.appeal.repository.AnswerRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
 import tech.bjut.su.appeal.util.CursorPaginationHelper;
+import tech.bjut.su.appeal.util.SpecificationHelper;
 
 import java.util.List;
 
@@ -66,17 +66,9 @@ public class QuestionService {
                 return null;
             }
             return builder.equal(root.get("campus"), dto.getCampus());
-        }, (root, query, builder) -> {
-            String search = StringUtils.trimToEmpty(dto.getSearch());
-            if (search.isEmpty()) {
-                return null;
-            }
-            Expression<String> pattern = builder.concat(builder.concat(builder.literal("%"), search), builder.literal("%"));
-            return builder.or(
-                builder.like(root.get("content"), pattern),
-                builder.like(root.get("answer").get("content"), pattern)
-            );
-        });
+        }, (root, query, builder) ->
+            SpecificationHelper.search(builder, dto.getSearch(), root.get("content"), root.get("answer").get("content"))
+        );
 
         return repository.findAllPaginatedOrderByIdDesc(spec, 10, position);
     }

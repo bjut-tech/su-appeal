@@ -1,22 +1,21 @@
 package tech.bjut.su.appeal.service;
 
-import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.KeysetScrollPosition;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Window;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import tech.bjut.su.appeal.dto.AnnouncementCarouselCreateDto;
-import tech.bjut.su.appeal.dto.AnnouncementCategoryCreateDto;
-import tech.bjut.su.appeal.dto.AnnouncementCreateDto;
-import tech.bjut.su.appeal.dto.AnnouncementIndexDto;
+import tech.bjut.su.appeal.dto.*;
 import tech.bjut.su.appeal.entity.*;
 import tech.bjut.su.appeal.repository.AnnouncementCarouselRepository;
 import tech.bjut.su.appeal.repository.AnnouncementCategoryRepository;
 import tech.bjut.su.appeal.repository.AnnouncementRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.util.CursorPaginationHelper;
+import tech.bjut.su.appeal.util.SpecificationHelper;
 
 import java.util.List;
 
@@ -51,18 +50,32 @@ public class AnnouncementService {
             }
             return builder.equal(root.get("category").get("id"), dto.getCategoryId());
         }, (root, query, builder) -> {
-            String search = StringUtils.trimToEmpty(dto.getSearch());
-            if (search.isEmpty()) {
-                return builder.equal(root.get("hidden"), false);
+            Predicate predicate = SpecificationHelper.search(builder, dto.getSearch(), root.get("title"), root.get("content"));
+            if (predicate == null) {
+                return builder.isFalse(root.get("hidden"));
             }
-            Expression<String> pattern = builder.concat(builder.concat(builder.literal("%"), search), builder.literal("%"));
-            return builder.or(
-                builder.like(root.get("title"), pattern),
-                builder.like(root.get("content"), pattern)
-            );
+            return predicate;
         });
 
         return repository.findAllPaginatedOrderByPinnedDescAndIdDesc(spec, 10, position);
+    }
+
+    public List<AnnouncementAutocompleteItemDto> indexAutocomplete(String search) {
+        Specification<Announcement> spec = Specification.where((root, query, builder) ->
+            SpecificationHelper.search(builder, search, root.get("title"), root.get("content"))
+        );
+
+        return repository.findBy(spec, query -> query
+            .limit(20)
+            .sortBy(Sort.by("id").descending())
+            .stream()
+        ).map(item -> {
+            AnnouncementAutocompleteItemDto dto = new AnnouncementAutocompleteItemDto();
+            dto.setId(item.getId());
+            dto.setTitle(StringUtils.stripToEmpty(item.getTitle()));
+            dto.setContent(StringUtils.abbreviate(StringUtils.stripToEmpty(item.getContent()), 50));
+            return dto;
+        }).toList();
     }
 
     @Transactional

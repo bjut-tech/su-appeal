@@ -1,23 +1,20 @@
 package tech.bjut.su.appeal.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.Filter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tech.bjut.su.appeal.filter.TrailingSlashRedirectFilter;
+import tech.bjut.su.appeal.util.StringToEnumConverterFactory;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-
-    private final ObjectMapper objectMapper;
-
-    public WebConfig(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
 
     @Bean
     public Filter trailingSlashRedirectFilter() {
@@ -32,8 +29,16 @@ public class WebConfig implements WebMvcConfigurer {
         return registrationBean;
     }
 
-    @PostConstruct
-    public void EnumObjectMapper() {
-        objectMapper.configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true);
+    @Bean
+    ObjectMapper jacksonObjectMapper(Jackson2ObjectMapperBuilder builder) {
+        return builder.featuresToEnable(
+            MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS,
+            DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL
+        ).build();
+    }
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addConverterFactory(new StringToEnumConverterFactory());
     }
 }

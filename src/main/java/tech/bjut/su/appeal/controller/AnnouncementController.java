@@ -6,6 +6,7 @@ import org.springframework.data.domain.Window;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import tech.bjut.su.appeal.dto.AnnouncementAutocompleteItemDto;
 import tech.bjut.su.appeal.dto.AnnouncementCreateDto;
 import tech.bjut.su.appeal.dto.AnnouncementIndexDto;
 import tech.bjut.su.appeal.dto.CursorPaginationDto;
@@ -13,6 +14,8 @@ import tech.bjut.su.appeal.entity.Announcement;
 import tech.bjut.su.appeal.jsonview.UserViews;
 import tech.bjut.su.appeal.service.AnnouncementService;
 import tech.bjut.su.appeal.service.SecurityService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/announcements")
@@ -51,6 +54,11 @@ public class AnnouncementController {
         }
 
         return value;
+    }
+
+    @GetMapping("/autocomplete")
+    public List<AnnouncementAutocompleteItemDto> indexAutocomplete(@RequestParam(required = false) String search) {
+        return service.indexAutocomplete(search);
     }
 
     @GetMapping("/{id}")

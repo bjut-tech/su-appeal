@@ -46,10 +46,6 @@ public class AttachmentService {
         }
     }
 
-    public Attachment get(UUID id) {
-        return repository.findById(id).orElseThrow();
-    }
-
     public File getFile(Attachment attachment) throws FileNotFoundException {
         String fileName = attachment.getId().toString() + ".bin";
         Path filePath = storePath.resolve(fileName);
