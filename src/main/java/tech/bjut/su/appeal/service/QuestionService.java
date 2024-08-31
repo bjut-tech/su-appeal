@@ -103,12 +103,12 @@ public class QuestionService {
     }
 
     public void delete(Question question) {
-        repository.delete(question);
+        repository.deleteById(question.getId());
     }
 
     public void delete(User user, Question question) {
         if (!question.isPublished() && question.getUser().equals(user)) {
-            repository.delete(question);
+            repository.deleteById(question.getId());
         }
     }
 
@@ -145,7 +145,7 @@ public class QuestionService {
             question.setPublished(false);
             question.setAnswer(null);
             repository.save(question);
-            answerRepository.delete(answer);
+            answerRepository.deleteById(answer.getId());
         }
     }
 

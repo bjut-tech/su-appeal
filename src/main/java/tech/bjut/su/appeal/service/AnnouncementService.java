@@ -112,8 +112,10 @@ public class AnnouncementService {
         repository.save(announcement);
     }
 
+    @Transactional
     public void delete(Announcement announcement) {
-        repository.delete(announcement);
+        carouselRepository.deleteAllByAnnouncementId(announcement.getId());
+        repository.deleteById(announcement.getId());
     }
 
     public List<AnnouncementCategory> getCategories() {
@@ -123,10 +125,7 @@ public class AnnouncementService {
     public AnnouncementCategory createCategory(AnnouncementCategoryCreateDto dto) {
         AnnouncementCategory category = new AnnouncementCategory();
 
-        category.setName(StringUtils.stripToEmpty(dto.getName()));
-        category.setDescription(StringUtils.stripToEmpty(dto.getDescription()));
-
-        return categoryRepository.save(category);
+        return updateCategory(category, dto);
     }
 
     public AnnouncementCategory updateCategory(AnnouncementCategory category, AnnouncementCategoryCreateDto dto) {
@@ -136,8 +135,10 @@ public class AnnouncementService {
         return categoryRepository.save(category);
     }
 
+    @Transactional
     public void deleteCategory(AnnouncementCategory category) {
-        categoryRepository.delete(category);
+        repository.updateAllCategoryToNullByCategory(category);
+        categoryRepository.deleteById(category.getId());
     }
 
     public List<AnnouncementCarousel> getCarousels() {
@@ -169,6 +170,6 @@ public class AnnouncementService {
         announcement.setHidden(false);
         repository.save(announcement);
 
-        carouselRepository.delete(carousel);
+        carouselRepository.deleteById(carousel.getId());
     }
 }

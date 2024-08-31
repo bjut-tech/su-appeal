@@ -8,14 +8,11 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import tech.bjut.su.appeal.dto.AnnouncementCarouselCreateDto;
 import tech.bjut.su.appeal.dto.AnnouncementCreateDto;
-import tech.bjut.su.appeal.entity.Announcement;
-import tech.bjut.su.appeal.entity.Attachment;
-import tech.bjut.su.appeal.entity.User;
+import tech.bjut.su.appeal.entity.*;
 import tech.bjut.su.appeal.enums.UserRoleEnum;
-import tech.bjut.su.appeal.repository.AnnouncementRepository;
-import tech.bjut.su.appeal.repository.AttachmentRepository;
-import tech.bjut.su.appeal.repository.UserRepository;
+import tech.bjut.su.appeal.repository.*;
 
 import java.util.List;
 
@@ -34,6 +31,12 @@ public class AnnouncementServiceTest {
     private AnnouncementRepository announcementRepository;
 
     @Autowired
+    private AnnouncementCategoryRepository announcementCategoryRepository;
+
+    @Autowired
+    private AnnouncementCarouselRepository announcementCarouselRepository;
+
+    @Autowired
     private AttachmentRepository attachmentRepository;
 
     @Autowired
@@ -48,6 +51,7 @@ public class AnnouncementServiceTest {
     private static final String USER_UID = "user1";
     private static final String ANNOUNCEMENT_TITLE = "title";
     private static final String ANNOUNCEMENT_CONTENT = "content";
+    private static final String CATEGORY_NAME = "category";
 
     @BeforeEach
     public void setUp() {
@@ -75,10 +79,12 @@ public class AnnouncementServiceTest {
         Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
         assertThat(fetchedAnnouncement).isNotNull();
         assertThat(fetchedAnnouncement.getUser()).isEqualTo(user);
+        assertThat(fetchedAnnouncement.getCategory()).isNull();
         assertThat(fetchedAnnouncement.getTitle()).isEqualTo(ANNOUNCEMENT_TITLE);
         assertThat(fetchedAnnouncement.getContent()).isEqualTo(ANNOUNCEMENT_CONTENT);
         assertThat(fetchedAnnouncement.getAttachments()).isNullOrEmpty();
         assertThat(fetchedAnnouncement.isPinned()).isFalse(); // should not be pinned by default
+        assertThat(fetchedAnnouncement.isHidden()).isFalse(); // should not be hidden by default
     }
 
     @Test
@@ -103,10 +109,12 @@ public class AnnouncementServiceTest {
         Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
         assertThat(fetchedAnnouncement).isNotNull();
         assertThat(fetchedAnnouncement.getUser()).isEqualTo(user);
+        assertThat(fetchedAnnouncement.getCategory()).isNull();
         assertThat(fetchedAnnouncement.getTitle()).isEqualTo(ANNOUNCEMENT_TITLE);
         assertThat(fetchedAnnouncement.getContent()).isEqualTo(ANNOUNCEMENT_CONTENT);
         assertThat(fetchedAnnouncement.getAttachments()).containsExactly(attachment);
         assertThat(fetchedAnnouncement.isPinned()).isFalse(); // should not be pinned by default
+        assertThat(fetchedAnnouncement.isHidden()).isFalse(); // should not be hidden by default
     }
 
     @Test
@@ -164,7 +172,7 @@ public class AnnouncementServiceTest {
     }
 
     @Test
-    public void testDelete_byId() {
+    public void testDelete() {
         // setup
         Announcement announcement = new Announcement();
         announcement.setUser(user);
@@ -172,30 +180,13 @@ public class AnnouncementServiceTest {
         announcement.setContent(ANNOUNCEMENT_CONTENT);
         announcement = announcementRepository.save(announcement);
 
-        // flush transaction
-        entityManager.flush();
-        entityManager.clear();
+        AnnouncementCarousel carousel1 = new AnnouncementCarousel();
+        carousel1.setAnnouncement(announcement);
+        carousel1 = announcementCarouselRepository.save(carousel1);
 
-        // execute
-        announcementService.delete(announcement.getId());
-
-        // flush transaction
-        entityManager.flush();
-        entityManager.clear();
-
-        // verify
-        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
-        assertThat(fetchedAnnouncement).isNull();
-    }
-
-    @Test
-    public void testDelete_byEntity() {
-        // setup
-        Announcement announcement = new Announcement();
-        announcement.setUser(user);
-        announcement.setTitle(ANNOUNCEMENT_TITLE);
-        announcement.setContent(ANNOUNCEMENT_CONTENT);
-        announcement = announcementRepository.save(announcement);
+        AnnouncementCarousel carousel2 = new AnnouncementCarousel();
+        carousel2.setAnnouncement(announcement);
+        carousel2 = announcementCarouselRepository.save(carousel2);
 
         // flush transaction
         entityManager.flush();
@@ -211,5 +202,111 @@ public class AnnouncementServiceTest {
         // verify
         Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
         assertThat(fetchedAnnouncement).isNull();
+
+        AnnouncementCarousel fetchedCarousel1 = announcementCarouselRepository.findById(carousel1.getId()).orElse(null);
+        assertThat(fetchedCarousel1).isNull();
+
+        AnnouncementCarousel fetchedCarousel2 = announcementCarouselRepository.findById(carousel2.getId()).orElse(null);
+        assertThat(fetchedCarousel2).isNull();
+    }
+
+    @Test
+    public void testDeleteCategory() {
+        // setup
+        AnnouncementCategory category = new AnnouncementCategory();
+        category.setName(CATEGORY_NAME);
+        category = announcementCategoryRepository.save(category);
+
+        Announcement announcement = new Announcement();
+        announcement.setUser(user);
+        announcement.setTitle(ANNOUNCEMENT_TITLE);
+        announcement.setContent(ANNOUNCEMENT_CONTENT);
+        announcement.setCategory(category);
+        announcement = announcementRepository.save(announcement);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        announcementService.deleteCategory(category);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // verify
+        AnnouncementCategory fetchedCategory = announcementCategoryRepository.findById(category.getId()).orElse(null);
+        assertThat(fetchedCategory).isNull();
+
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNotNull();
+        assertThat(fetchedAnnouncement.getCategory()).isNull();
+    }
+
+    @Test
+    public void testCreateCarousel() {
+        // setup
+        Announcement announcement = new Announcement();
+        announcement.setUser(user);
+        announcement.setTitle(ANNOUNCEMENT_TITLE);
+        announcement.setContent(ANNOUNCEMENT_CONTENT);
+        announcement = announcementRepository.save(announcement);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        AnnouncementCarouselCreateDto dto = new AnnouncementCarouselCreateDto();
+        dto.setAnnouncementId(announcement.getId());
+        AnnouncementCarousel carousel = announcementService.createCarousel(dto);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // verify
+        AnnouncementCarousel fetchedCarousel = announcementCarouselRepository.findById(carousel.getId()).orElse(null);
+        assertThat(fetchedCarousel).isNotNull();
+        assertThat(fetchedCarousel.getAnnouncement()).isEqualTo(announcement);
+
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNotNull();
+        assertThat(fetchedAnnouncement.isHidden()).isTrue();
+    }
+
+    @Test
+    public void testDeleteCarousel() {
+        // setup
+        Announcement announcement = new Announcement();
+        announcement.setUser(user);
+        announcement.setTitle(ANNOUNCEMENT_TITLE);
+        announcement.setContent(ANNOUNCEMENT_CONTENT);
+        announcement.setHidden(true);
+        announcement = announcementRepository.save(announcement);
+
+        AnnouncementCarousel carousel = new AnnouncementCarousel();
+        carousel.setAnnouncement(announcement);
+        carousel = announcementCarouselRepository.save(carousel);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // execute
+        announcementService.deleteCarousel(carousel);
+
+        // flush transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // verify
+        AnnouncementCarousel fetchedCarousel = announcementCarouselRepository.findById(carousel.getId()).orElse(null);
+        assertThat(fetchedCarousel).isNull();
+
+        Announcement fetchedAnnouncement = announcementRepository.findById(announcement.getId()).orElse(null);
+        assertThat(fetchedAnnouncement).isNotNull();
+        assertThat(fetchedAnnouncement.isHidden()).isFalse();
     }
 }

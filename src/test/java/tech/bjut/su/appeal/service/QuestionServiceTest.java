@@ -370,8 +370,8 @@ public class QuestionServiceTest {
     }
 
     @Test
-    public void testDeleteQuestion_byId() {
-        // the byId delete is only called by admins, so any question can be deleted
+    public void testDeleteQuestion_byEntity() {
+        // the byEntity delete is only called by admins, so any question can be deleted
 
         // setup
         Answer answer = new Answer();
@@ -389,6 +389,7 @@ public class QuestionServiceTest {
         question.setUser(user1);
         question.setCampus(QUESTION_CAMPUS);
         question.setContent(QUESTION_CONTENT);
+        question.setPublished(true);
         question = questionRepository.save(question);
 
         // clear transaction
@@ -396,7 +397,7 @@ public class QuestionServiceTest {
         entityManager.clear();
 
         // execute
-        questionService.delete(question.getId());
+        questionService.delete(question);
 
         // clear transaction
         entityManager.flush();
@@ -458,9 +459,9 @@ public class QuestionServiceTest {
         entityManager.clear();
 
         // execute
-        questionService.delete(user1, question1.getId());
-        questionService.delete(user1, question2.getId());
-        questionService.delete(user1, question3.getId());
+        questionService.delete(user1, question1);
+        questionService.delete(user1, question2);
+        questionService.delete(user1, question3);
 
         // clear transaction
         entityManager.flush();
