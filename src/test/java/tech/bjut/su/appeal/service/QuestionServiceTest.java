@@ -139,6 +139,28 @@ public class QuestionServiceTest {
     }
 
     @Test
+    public void testCreate_canPostAnonymous() {
+        QuestionCreateDto dto = new QuestionCreateDto();
+        dto.setCampus(QUESTION_CAMPUS);
+        dto.setContent(QUESTION_CONTENT);
+
+        Question question = questionService.create(null, dto);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getUser()).isNull();
+        assertThat(fetchedQuestion.getContent()).isEqualTo(QUESTION_CONTENT);
+        assertThat(fetchedQuestion.getCampus()).isEqualTo(QUESTION_CAMPUS);
+        assertThat(fetchedQuestion.getContact()).isNullOrEmpty();
+        assertThat(fetchedQuestion.isPublished()).isFalse(); // should be not published by default
+    }
+
+    @Test
     public void testSetPublished_setToTrue() {
         // setup
         Question question = new Question();
@@ -246,6 +268,31 @@ public class QuestionServiceTest {
         assertThat(fetchedQuestion).isNotNull();
         assertThat(fetchedQuestion.getAnswer()).isNotNull();
         assertThat(fetchedQuestion.getAnswer().getAttachments()).containsExactly(attachment);
+    }
+
+    @Test
+    public void testAnswer_canAnswerAnonymousQuestions() {
+        // setup
+        Question question = new Question();
+        question.setCampus(QUESTION_CAMPUS);
+        question.setContent(QUESTION_CONTENT);
+        question = questionRepository.save(question);
+
+        QuestionAnswerDto dto = new QuestionAnswerDto();
+        dto.setContent(ANSWER_CONTENT);
+
+        question = questionService.answer(question, user1, dto);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getAnswer()).isNotNull();
+        assertThat(fetchedQuestion.getAnswer().getContent()).isEqualTo(ANSWER_CONTENT);
+        assertThat(fetchedQuestion.getAnswer().getLikesCount()).isZero();
     }
 
     @Test
