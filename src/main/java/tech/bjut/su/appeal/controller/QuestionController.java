@@ -112,7 +112,7 @@ public class QuestionController {
     @PreAuthorize("isAuthenticated()")
     public MappingJacksonValue show(@PathVariable("id") Question question) {
         final boolean isAdmin = securityService.hasAuthority("ADMIN");
-        final boolean isOwn = question.getUser().equals(securityService.user());
+        final boolean isOwn = securityService.user().equals(question.getUser());
 
         if (!isAdmin && !question.isPublished() && !isOwn) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"));
