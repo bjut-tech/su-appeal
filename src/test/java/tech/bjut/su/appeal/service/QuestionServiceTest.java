@@ -282,9 +282,9 @@ public class QuestionServiceTest {
         assertThat(fetchedQuestion.getAnswer()).isNotNull();
         assertThat(fetchedQuestion.getAnswer().getLikesCount()).isEqualTo(1);
 
-        List<AnswerLike> fetchedLikes = answerLikeRepository.findByUser(user1);
-        assertThat(fetchedLikes)
-            .filteredOn(like -> like.getAnswer().equals(fetchedQuestion.getAnswer()))
+        List<Answer> fetchedAnswers = answerLikeRepository.findDistinctAnswerByUser(user1);
+        assertThat(fetchedAnswers)
+            .filteredOn(item -> item.equals(fetchedQuestion.getAnswer()))
             .hasSize(1);
     }
 
@@ -363,9 +363,9 @@ public class QuestionServiceTest {
         assertThat(fetchedQuestion.getAnswer()).isNotNull();
         assertThat(fetchedQuestion.getAnswer().getLikesCount()).isZero();
 
-        List<AnswerLike> fetchedLikes = answerLikeRepository.findByUser(user1);
-        assertThat(fetchedLikes)
-            .filteredOn(fetchedLike -> fetchedLike.getAnswer().equals(fetchedQuestion.getAnswer()))
+        List<Answer> fetchedAnswers = answerLikeRepository.findDistinctAnswerByUser(user1);
+        assertThat(fetchedAnswers)
+            .filteredOn(item -> item.equals(fetchedQuestion.getAnswer()))
             .isEmpty();
     }
 

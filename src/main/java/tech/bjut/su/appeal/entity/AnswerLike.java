@@ -14,7 +14,4 @@ public class AnswerLike extends Like {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "answer_id", nullable = true)
     private Answer answer;
-
-    @Column(name = "answer_id", insertable = false, updatable = false, nullable = true)
-    private Long answerId;
 }

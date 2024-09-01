@@ -41,6 +41,9 @@ public class CustomQueryTest {
     private AnswerRepository answerRepository;
 
     @Autowired
+    private AnswerLikeRepository answerLikeRepository;
+
+    @Autowired
     private AttachmentRepository attachmentRepository;
 
     // The test data
@@ -251,5 +254,42 @@ public class CustomQueryTest {
             attachment2.getId().toString(),
             attachment3.getId().toString()
         );
+    }
+
+    @Test
+    public void testAnswerLikeRepository_findDistinctAnswerIdsByUser() {
+        // Setup
+        Answer answer1 = new Answer();
+        answer1.setUser(user);
+        answer1.setContent("Sample Answer");
+        answer1 = answerRepository.save(answer1);
+
+        Answer answer2 = new Answer();
+        answer2.setUser(user);
+        answer2.setContent("Sample Answer");
+        answer2 = answerRepository.save(answer2);
+
+        AnswerLike like1 = new AnswerLike();
+        like1.setUser(user);
+        like1.setAnswer(answer1);
+        answerLikeRepository.save(like1);
+
+        AnswerLike like2 = new AnswerLike();
+        like2.setUser(user);
+        like2.setAnswer(answer1);
+        answerLikeRepository.save(like2);
+
+        AnswerLike like3 = new AnswerLike();
+        like3.setUser(user);
+        like3.setAnswer(answer2);
+        answerLikeRepository.save(like3);
+
+        // Clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // Fetch and verify
+        List<Answer> answersFetched = answerLikeRepository.findDistinctAnswerByUser(user);
+        assertThat(answersFetched).containsExactlyInAnyOrder(answer1, answer2);
     }
 }

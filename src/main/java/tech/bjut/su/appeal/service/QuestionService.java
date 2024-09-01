@@ -19,6 +19,8 @@ import tech.bjut.su.appeal.util.CursorPaginationHelper;
 import tech.bjut.su.appeal.util.SpecificationHelper;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class QuestionService {
@@ -176,9 +178,10 @@ public class QuestionService {
         answerRepository.save(answer);
     }
 
-    public List<Long> getLikedAnswerIds(User user) {
-        return likeRepository.findByUser(user).stream()
-                .map(AnswerLike::getAnswerId)
-                .toList();
+    public Set<Long> getLikedAnswerIds(User user) {
+        return likeRepository.findDistinctAnswerByUser(user)
+            .stream()
+            .map(Answer::getId)
+            .collect(Collectors.toUnmodifiableSet());
     }
 }

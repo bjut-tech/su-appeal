@@ -24,8 +24,8 @@ import tech.bjut.su.appeal.service.UserService;
 import tech.bjut.su.appeal.util.I18nHelper;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/questions")
@@ -181,7 +181,7 @@ public class QuestionController {
 
     @GetMapping("/liked-answers")
     @PreAuthorize("isAuthenticated()")
-    public List<Long> getLikedAnswers() {
+    public Set<Long> getLikedAnswers() {
         return service.getLikedAnswerIds(securityService.user());
     }
 
