@@ -17,12 +17,12 @@ import tech.bjut.su.appeal.util.StringToEnumConverterFactory;
 public class WebConfig implements WebMvcConfigurer {
 
     @Bean
-    public Filter trailingSlashRedirectFilter() {
+    Filter trailingSlashRedirectFilter() {
         return new TrailingSlashRedirectFilter();
     }
 
     @Bean
-    public FilterRegistrationBean<Filter> trailingSlashFilter() {
+    FilterRegistrationBean<Filter> trailingSlashFilter() {
         FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(trailingSlashRedirectFilter());
         registrationBean.addUrlPatterns("/*");

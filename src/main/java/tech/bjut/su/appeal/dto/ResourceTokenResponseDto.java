@@ -3,18 +3,16 @@ package tech.bjut.su.appeal.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import lombok.Data;
+import org.springframework.lang.Nullable;
 import tech.bjut.su.appeal.jsonview.UserViews;
 
 @Data
 @JsonView(UserViews.Public.class)
-public class TokenResponseDto {
+public class ResourceTokenResponseDto<T> {
 
-    @JsonProperty("access_token")
-    private String accessToken;
+    @JsonProperty("resource_token")
+    private TokenResponseDto resourceToken;
 
-    @JsonProperty("expires_in")
-    private long expiresIn;
-
-    @JsonProperty("token_type")
-    private String tokenType = "Bearer";
+    @Nullable
+    private T data;
 }

@@ -13,14 +13,14 @@ import java.util.Locale;
 public class I18nConfig {
 
     @Bean
-    public LocaleResolver localeResolver() {
+    LocaleResolver localeResolver() {
         FixedLocaleResolver localeResolver = new FixedLocaleResolver();
         localeResolver.setDefaultLocale(new Locale("zh", "CN"));
         return localeResolver;
     }
 
     @Bean
-    public MessageSource messageSource() {
+    MessageSource messageSource() {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
         messageSource.setBasename("classpath:i18n/messages");
         messageSource.setDefaultEncoding("UTF-8");

@@ -1,6 +1,8 @@
 package tech.bjut.su.appeal.util;
 
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.KeysetScrollPosition;
+import org.springframework.data.domain.ScrollPosition;
+import org.springframework.data.domain.Window;
 import org.springframework.lang.NonNull;
 
 import java.util.Map;

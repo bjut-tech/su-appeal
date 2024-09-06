@@ -1,5 +1,8 @@
 package tech.bjut.su.appeal.config;
 
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -11,7 +14,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
@@ -20,9 +26,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import tech.bjut.su.appeal.security.CasRestAuthenticationProvider;
+import tech.bjut.su.appeal.security.JwtAuthenticationConverter;
 import tech.bjut.su.appeal.security.SinglePageAuthenticationConfigurer;
-import tech.bjut.su.appeal.security.UserDetailsJwtAuthenticationConverter;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 
@@ -31,34 +40,34 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final CasRestAuthenticationProvider casRestAuthenticationProvider;
-
-    private final UserDetailsJwtAuthenticationConverter jwtAuthenticationConverter;
-
-    private final JwtEncoder jwtEncoder;
-
     private final String frontendUrl;
+
+    private final SecretKey jwtSecret;
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
-    public SecurityConfig(
-        AppProperties properties,
-        CasRestAuthenticationProvider casRestAuthenticationProvider,
-        UserDetailsJwtAuthenticationConverter jwtAuthenticationConverter,
-        JwtEncoder jwtEncoder
-    ) {
-        this.casRestAuthenticationProvider = casRestAuthenticationProvider;
-        this.jwtAuthenticationConverter = jwtAuthenticationConverter;
-        this.jwtEncoder = jwtEncoder;
+    public SecurityConfig(AppProperties properties) {
         this.frontendUrl = properties.getFrontend();
+        this.jwtSecret = new SecretKeySpec(
+            properties.getAuth().getJwtSecret()
+                .getBytes(StandardCharsets.UTF_8),
+            "NONE"
+        );
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(
+        HttpSecurity http,
+        CasRestAuthenticationProvider casRestAuthenticationProvider,
+        JwtAuthenticationConverter jwtAuthenticationConverter,
+        SinglePageAuthenticationConfigurer singlePageAuthenticationConfigurer
+    ) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
-            .headers(headers -> headers.httpStrictTransportSecurity(HeadersConfigurer.HstsConfig::disable)
-                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+            .headers(headers -> headers
+                .httpStrictTransportSecurity(HeadersConfigurer.HstsConfig::disable)
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
+            )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(casRestAuthenticationProvider)
             .oauth2ResourceServer(oauth -> oauth
@@ -80,13 +89,13 @@ public class SecurityConfig {
                 .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
             );
 
-        http.apply(new SinglePageAuthenticationConfigurer(jwtEncoder));
+        http.apply(singlePageAuthenticationConfigurer);
 
         return http.build();
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         if (frontendUrl != null && !frontendUrl.isBlank()) {
             logger.info("Configured frontend URL: {}", frontendUrl);
@@ -98,5 +107,16 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    @Bean
+    JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withSecretKey(jwtSecret).build();
+    }
+
+    @Bean
+    JwtEncoder jwtEncoder() {
+        JWKSource<SecurityContext> source = new ImmutableSecret<>(jwtSecret);
+        return new NimbusJwtEncoder(source);
     }
 }

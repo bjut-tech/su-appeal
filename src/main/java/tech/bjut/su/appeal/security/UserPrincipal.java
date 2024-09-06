@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.security;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -8,24 +9,30 @@ import tech.bjut.su.appeal.entity.User;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
-@Getter
+@EqualsAndHashCode(of = "user")
 public class UserPrincipal implements UserDetails {
+
+    @Getter
     private final User user;
+
+    private final Collection<SimpleGrantedAuthority> authorities;
 
     public UserPrincipal(User user) {
         this.user = user;
+
+        List<SimpleGrantedAuthority> authoritiesGranted = new ArrayList<>();
+        authoritiesGranted.add(new SimpleGrantedAuthority(user.getRole().name()));
+        if (this.user.isAdmin()) {
+            authoritiesGranted.add(new SimpleGrantedAuthority("ADMIN"));
+        }
+        authorities = Collections.unmodifiableCollection(authoritiesGranted);
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        var authorities = new ArrayList<GrantedAuthority>();
-
-        authorities.add(new SimpleGrantedAuthority(user.getRole().name()));
-        if (this.user.isAdmin()) {
-            authorities.add(new SimpleGrantedAuthority("ADMIN"));
-        }
-
         return authorities;
     }
 
@@ -57,14 +64,5 @@ public class UserPrincipal implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof UserPrincipal)) {
-            return false;
-        }
-
-        return ((UserPrincipal) obj).getUser().equals(this.getUser());
     }
 }

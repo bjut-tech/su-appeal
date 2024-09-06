@@ -6,32 +6,35 @@ import org.springframework.data.domain.Window;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import tech.bjut.su.appeal.dto.CursorPaginationDto;
-import tech.bjut.su.appeal.dto.QuestionAnswerDto;
-import tech.bjut.su.appeal.dto.QuestionCreateDto;
-import tech.bjut.su.appeal.dto.QuestionIndexDto;
+import tech.bjut.su.appeal.dto.*;
 import tech.bjut.su.appeal.entity.Answer;
 import tech.bjut.su.appeal.entity.Question;
 import tech.bjut.su.appeal.entity.User;
 import tech.bjut.su.appeal.enums.CampusEnum;
 import tech.bjut.su.appeal.enums.QuestionStatusEnum;
 import tech.bjut.su.appeal.jsonview.UserViews;
+import tech.bjut.su.appeal.security.JwtResourceAuthoritiesHelper;
+import tech.bjut.su.appeal.security.ResourceAuthority;
 import tech.bjut.su.appeal.service.QuestionService;
 import tech.bjut.su.appeal.service.SecurityService;
 import tech.bjut.su.appeal.service.UserService;
 import tech.bjut.su.appeal.util.I18nHelper;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
 
 @RestController
 @RequestMapping("/questions")
 public class QuestionController {
 
     private final I18nHelper i18nHelper;
+
+    private final JwtEncoder jwtEncoder;
 
     private final QuestionService service;
 
@@ -41,11 +44,13 @@ public class QuestionController {
 
     public QuestionController(
         I18nHelper i18nHelper,
+        JwtEncoder jwtEncoder,
         QuestionService service,
         UserService userService,
         SecurityService securityService
     ) {
         this.i18nHelper = i18nHelper;
+        this.jwtEncoder = jwtEncoder;
         this.service = service;
         this.userService = userService;
         this.securityService = securityService;
@@ -94,13 +99,24 @@ public class QuestionController {
     }
 
     @GetMapping("/history")
-    @PreAuthorize("isAuthenticated()")
     @JsonView(UserViews.Private.class)
     public CursorPaginationDto<Question> history(
         @RequestParam(required = false) String cursor
     ) {
+        User user = securityService.user();
+        List<Long> ids = new ArrayList<>();
+        if (securityService.authentication() != null) {
+            for (GrantedAuthority authority : securityService.authentication().getAuthorities()) {
+                if (authority instanceof ResourceAuthority resourceAuthority
+                    && resourceAuthority.getEntityName().equals(ResourceAuthority.ENTITY_NAME_QUESTION)) {
+                    ids.add(Long.valueOf(resourceAuthority.getEntityId()));
+                }
+            }
+        }
+
         QuestionIndexDto dto = new QuestionIndexDto();
-        dto.setUser(securityService.user());
+        dto.setIds(ids);
+        dto.setUser(user);
         dto.setCursor(cursor);
 
         Window<Question> pagination = service.index(dto);
@@ -109,19 +125,18 @@ public class QuestionController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public MappingJacksonValue show(@PathVariable("id") Question question) {
         final boolean isAdmin = securityService.hasAuthority("ADMIN");
-        final boolean isOwn = securityService.user().equals(question.getUser());
+        final boolean isOwner = service.isOwner(question);
 
-        if (!isAdmin && !question.isPublished() && !isOwn) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, i18nHelper.get("question.not-found"));
+        if (!isAdmin && !question.isPublished() && !isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, i18nHelper.get("question.forbidden"));
         }
 
         MappingJacksonValue value = new MappingJacksonValue(question);
         if (isAdmin) {
             value.setSerializationView(UserViews.Admin.class);
-        } else if (isOwn) {
+        } else if (isOwner) {
             value.setSerializationView(UserViews.Private.class);
         } else {
             value.setSerializationView(UserViews.Public.class);
@@ -131,13 +146,41 @@ public class QuestionController {
 
     @PostMapping("")
     @JsonView(UserViews.Private.class)
-    public Question store(@Valid @RequestBody QuestionCreateDto dto) {
+    public ResourceTokenResponseDto<Question> store(@Valid @RequestBody QuestionCreateDto request) {
         User user = securityService.user();
-        if (user == null && !dto.getUid().isBlank()) {
-            user = userService.findOrCreate(dto.getUid(), dto.getName());
+        if (user == null && !request.getUid().isBlank()) {
+            user = userService.findOrCreate(request.getUid(), request.getName());
         }
 
-        return service.create(user, dto);
+        Question question = service.create(user, request);
+
+        JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
+
+        Instant now = Instant.now();
+        long expiry = 2592000; // one month
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+            .issuedAt(now)
+            .expiresAt(now.plusSeconds(expiry))
+            .claim(
+                JwtResourceAuthoritiesHelper.CLAIM_RESOURCES,
+                JwtResourceAuthoritiesHelper.extractClaim(
+                    securityService.authentication(),
+                    new ResourceAuthority(ResourceAuthority.ENTITY_NAME_QUESTION, String.valueOf(question.getId()))
+                )
+            )
+            .build();
+
+        Jwt jwt = jwtEncoder.encode(JwtEncoderParameters.from(header, claims));
+
+        TokenResponseDto tokenDto = new TokenResponseDto();
+        tokenDto.setAccessToken(jwt.getTokenValue());
+        tokenDto.setExpiresIn(expiry);
+
+        ResourceTokenResponseDto<Question> response = new ResourceTokenResponseDto<>();
+        response.setResourceToken(tokenDto);
+        response.setData(question);
+
+        return response;
     }
 
     @PostMapping("/{id}/publish")
@@ -153,14 +196,12 @@ public class QuestionController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public void delete(@PathVariable("id") Question question) {
         final boolean isAdmin = securityService.hasAuthority("ADMIN");
+        final boolean isOwner = service.isOwner(question);
 
-        if (isAdmin) {
+        if (isAdmin || (!question.isPublished() && isOwner)) {
             service.delete(question);
-        } else {
-            service.delete(securityService.user(), question);
         }
     }
 

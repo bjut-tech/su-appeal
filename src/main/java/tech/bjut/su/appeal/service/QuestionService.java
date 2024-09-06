@@ -1,5 +1,6 @@
 package tech.bjut.su.appeal.service;
 
+import jakarta.persistence.criteria.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.KeysetScrollPosition;
 import org.springframework.data.domain.Window;
@@ -15,9 +16,11 @@ import tech.bjut.su.appeal.repository.AnswerLikeRepository;
 import tech.bjut.su.appeal.repository.AnswerRepository;
 import tech.bjut.su.appeal.repository.AttachmentRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
+import tech.bjut.su.appeal.security.ResourceAuthority;
 import tech.bjut.su.appeal.util.CursorPaginationHelper;
 import tech.bjut.su.appeal.util.SpecificationHelper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,25 +35,40 @@ public class QuestionService {
 
     private final AttachmentRepository attachmentRepository;
 
+    private final SecurityService securityService;
+
     public QuestionService(
         QuestionRepository repository,
         AnswerRepository answerRepository,
         AnswerLikeRepository likeRepository,
-        AttachmentRepository attachmentRepository
+        AttachmentRepository attachmentRepository,
+        SecurityService securityService
     ) {
         this.repository = repository;
         this.answerRepository = answerRepository;
         this.likeRepository = likeRepository;
         this.attachmentRepository = attachmentRepository;
+        this.securityService = securityService;
     }
 
     public Window<Question> index(QuestionIndexDto dto) {
         KeysetScrollPosition position = CursorPaginationHelper.positionOf(dto.getCursor());
         Specification<Question> spec = Specification.allOf((root, query, builder) -> {
-            if (dto.getUser() == null) {
-                return null;
+            List<Predicate> predicates = new ArrayList<>();
+            if (dto.getUser() != null) {
+                predicates.add(builder.equal(root.get("user"), dto.getUser()));
             }
-            return builder.equal(root.get("user"), dto.getUser());
+            if (dto.getIds() != null) {
+                predicates.add(root.get("id").in(dto.getIds()));
+            }
+
+            if (predicates.size() == 2) {
+                return builder.or(predicates.get(0), predicates.get(1));
+            }
+            if (predicates.size() == 1) {
+                return predicates.get(0);
+            }
+            return null;
         }, (root, query, builder) -> {
             if (dto.getStatus() == null) {
                 return null;
@@ -106,12 +124,6 @@ public class QuestionService {
 
     public void delete(Question question) {
         repository.deleteById(question.getId());
-    }
-
-    public void delete(User user, Question question) {
-        if (!question.isPublished() && question.getUser().equals(user)) {
-            repository.deleteById(question.getId());
-        }
     }
 
     @Transactional
@@ -183,5 +195,16 @@ public class QuestionService {
             .stream()
             .map(Answer::getId)
             .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public boolean isOwner(Question question) {
+        if (question.getUser() != null && question.getUser().equals(securityService.user())) {
+            return true;
+        }
+
+        return securityService.hasAuthority(new ResourceAuthority(
+            ResourceAuthority.ENTITY_NAME_QUESTION,
+            String.valueOf(question.getId())
+        ));
     }
 }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,9 @@ public class QuestionServiceTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @MockBean
+    private SecurityService securityService;
 
     @Autowired
     private QuestionRepository questionRepository;
@@ -460,75 +464,6 @@ public class QuestionServiceTest {
 
         AnswerLike fetchedLike = answerLikeRepository.findById(like.getId()).orElse(null);
         assertThat(fetchedLike).isNull();
-    }
-
-    @Test
-    public void testDeleteQuestion_withUser() {
-        // this is the delete method called by users,
-        // they can only delete questions owned by them and only when the question is not published
-
-        // setup
-        Answer answer1 = new Answer();
-        answer1.setUser(user1);
-        answer1.setContent(ANSWER_CONTENT);
-        answer1 = answerRepository.save(answer1);
-
-        AnswerLike like1 = new AnswerLike();
-        like1.setUser(user1);
-        like1.setAnswer(answer1);
-        like1 = answerLikeRepository.save(like1);
-
-        // q1: current user, not published -> deletable
-        Question question1 = new Question();
-        question1.setAnswer(answer1);
-        question1.setUser(user1);
-        question1.setCampus(QUESTION_CAMPUS);
-        question1.setContent(QUESTION_CONTENT);
-        question1 = questionRepository.save(question1);
-
-        // q2: other user -> not deletable
-        Question question2 = new Question();
-        question2.setUser(user2);
-        question2.setCampus(QUESTION_CAMPUS);
-        question2.setContent(QUESTION_CONTENT);
-        question2 = questionRepository.save(question2);
-
-        // q3: published -> not deletable
-        Question question3 = new Question();
-        question3.setUser(user1);
-        question3.setCampus(QUESTION_CAMPUS);
-        question3.setContent(QUESTION_CONTENT);
-        question3.setPublished(true);
-        question3 = questionRepository.save(question3);
-
-        // clear transaction
-        entityManager.flush();
-        entityManager.clear();
-
-        // execute
-        questionService.delete(user1, question1);
-        questionService.delete(user1, question2);
-        questionService.delete(user1, question3);
-
-        // clear transaction
-        entityManager.flush();
-        entityManager.clear();
-
-        // fetch and verify
-        Answer fetchedAnswer1 = answerRepository.findById(answer1.getId()).orElse(null);
-        assertThat(fetchedAnswer1).isNull();
-
-        AnswerLike fetchedLike1 = answerLikeRepository.findById(like1.getId()).orElse(null);
-        assertThat(fetchedLike1).isNull();
-
-        Question fetchedQuestion1 = questionRepository.findById(question1.getId()).orElse(null);
-        assertThat(fetchedQuestion1).isNull();
-
-        Question fetchedQuestion2 = questionRepository.findById(question2.getId()).orElse(null);
-        assertThat(fetchedQuestion2).isNotNull();
-
-        Question fetchedQuestion3 = questionRepository.findById(question3.getId()).orElse(null);
-        assertThat(fetchedQuestion3).isNotNull();
     }
 
     @Test
