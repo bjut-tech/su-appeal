@@ -36,6 +36,9 @@ public class QuestionServiceTest {
     private QuestionRepository questionRepository;
 
     @Autowired
+    private QuestionCategoryRepository questionCategoryRepository;
+
+    @Autowired
     private AnswerRepository answerRepository;
 
     @Autowired
@@ -93,6 +96,7 @@ public class QuestionServiceTest {
         assertThat(fetchedQuestion.getCampus()).isEqualTo(QUESTION_CAMPUS);
         assertThat(fetchedQuestion.getContact()).isNullOrEmpty();
         assertThat(fetchedQuestion.isPublished()).isFalse(); // should be not published by default
+        assertThat(fetchedQuestion.getCategory()).isNull();
     }
 
     @Test
@@ -116,6 +120,7 @@ public class QuestionServiceTest {
         assertThat(fetchedQuestion.getCampus()).isEqualTo(QUESTION_CAMPUS);
         assertThat(fetchedQuestion.getContact()).isEqualTo(QUESTION_CONTACT);
         assertThat(fetchedQuestion.isPublished()).isFalse(); // should be not published by default
+        assertThat(fetchedQuestion.getCategory()).isNull();
     }
 
     @Test
@@ -140,6 +145,35 @@ public class QuestionServiceTest {
         Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
         assertThat(fetchedQuestion).isNotNull();
         assertThat(fetchedQuestion.getAttachments()).containsExactly(attachment);
+    }
+
+    @Test
+    public void testCreate_canSaveCategory() {
+        // setup
+        QuestionCategory category = new QuestionCategory();
+        category.setName("Test Category");
+        category = questionCategoryRepository.save(category);
+
+        QuestionCreateDto dto = new QuestionCreateDto();
+        dto.setCampus(QUESTION_CAMPUS);
+        dto.setContent(QUESTION_CONTENT);
+        dto.setCategoryId(category.getId());
+
+        Question question = questionService.create(user1, dto);
+
+        // clear transaction
+        entityManager.flush();
+        entityManager.clear();
+
+        // fetch and verify
+        Question fetchedQuestion = questionRepository.findById(question.getId()).orElse(null);
+        assertThat(fetchedQuestion).isNotNull();
+        assertThat(fetchedQuestion.getUser()).isEqualTo(user1);
+        assertThat(fetchedQuestion.getContent()).isEqualTo(QUESTION_CONTENT);
+        assertThat(fetchedQuestion.getCampus()).isEqualTo(QUESTION_CAMPUS);
+        assertThat(fetchedQuestion.getContact()).isNullOrEmpty();
+        assertThat(fetchedQuestion.isPublished()).isFalse(); // should be not published by default
+        assertThat(fetchedQuestion.getCategory()).isEqualTo(category);
     }
 
     @Test

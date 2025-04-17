@@ -16,9 +16,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import tech.bjut.su.appeal.config.TestSecurityConfig;
 import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.entity.Question;
+import tech.bjut.su.appeal.entity.QuestionCategory;
 import tech.bjut.su.appeal.entity.User;
 import tech.bjut.su.appeal.enums.CampusEnum;
 import tech.bjut.su.appeal.enums.UserRoleEnum;
+import tech.bjut.su.appeal.repository.QuestionCategoryRepository;
 import tech.bjut.su.appeal.repository.QuestionRepository;
 import tech.bjut.su.appeal.repository.UserRepository;
 
@@ -47,6 +49,9 @@ public class QuestionControllerTest {
     private QuestionRepository questionRepository;
 
     @Autowired
+    private QuestionCategoryRepository questionCategoryRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     // the test data
@@ -56,6 +61,7 @@ public class QuestionControllerTest {
     private static final CampusEnum QUESTION_CAMPUS = CampusEnum.MAIN;
     private static final String QUESTION_CONTENT = "question";
     private static final String ANSWER_CONTENT = "answer";
+    private static final String CATEGORY_NAME = "category";
 
     @Test
     @WithAnonymousUser
@@ -122,10 +128,15 @@ public class QuestionControllerTest {
         user.setRole(USER_ROLE);
         user = userRepository.save(user);
 
+        QuestionCategory category = new QuestionCategory();
+        category.setName(CATEGORY_NAME);
+        category = questionCategoryRepository.save(category);
+
         Question question1 = new Question();
         question1.setUser(user);
         question1.setContact(QUESTION_CONTACT);
         question1.setContent(QUESTION_CONTENT);
+        question1.setCategory(category);
         question1.setPublished(true);
         question1 = questionRepository.save(question1);
 
@@ -145,7 +156,9 @@ public class QuestionControllerTest {
                 status().isOk(),
                 jsonPath("$.id").value(question1.getId()),
                 jsonPath("$.user").doesNotExist(),
-                jsonPath("$.contact").doesNotExist()
+                jsonPath("$.contact").doesNotExist(),
+                jsonPath("$.category.id").value(category.getId()),
+                jsonPath("$.category.name").value(CATEGORY_NAME)
             );
 
         mvc.perform(get("/questions/" + question2.getId()))
@@ -163,24 +176,34 @@ public class QuestionControllerTest {
         user2.setRole(USER_ROLE);
         user2 = userRepository.save(user2);
 
+        QuestionCategory category = new QuestionCategory();
+        category.setName(CATEGORY_NAME);
+        category = questionCategoryRepository.save(category);
+
+        // own question
         Question question1 = new Question();
         question1.setUser(user1);
         question1.setContact(QUESTION_CONTACT);
         question1.setContent(QUESTION_CONTENT);
         question1.setPublished(false);
+        question1.setCategory(category);
         question1 = questionRepository.save(question1);
 
+        // others published question
         Question question2 = new Question();
         question2.setUser(user2);
         question2.setContact(QUESTION_CONTACT);
         question2.setContent(QUESTION_CONTENT);
         question2.setPublished(true);
+        question2.setCategory(category);
         question2 = questionRepository.save(question2);
 
+        // others unpublished question
         Question question3 = new Question();
         question3.setUser(null);
         question3.setContent(QUESTION_CONTENT);
         question3.setPublished(false);
+        question3.setCategory(category);
         question3 = questionRepository.save(question3);
 
         // flush transaction
@@ -193,7 +216,9 @@ public class QuestionControllerTest {
                 status().isOk(),
                 jsonPath("$.id").value(question1.getId()),
                 jsonPath("$.user.id").value(user1.getId()),
-                jsonPath("$.contact").value(QUESTION_CONTACT)
+                jsonPath("$.contact").value(QUESTION_CONTACT),
+                jsonPath("$.category.id").value(category.getId()),
+                jsonPath("$.category.name").value(CATEGORY_NAME)
             );
 
         mvc.perform(get("/questions/" + question2.getId()))
@@ -201,7 +226,9 @@ public class QuestionControllerTest {
                 status().isOk(),
                 jsonPath("$.id").value(question2.getId()),
                 jsonPath("$.user").doesNotExist(),
-                jsonPath("$.contact").doesNotExist()
+                jsonPath("$.contact").doesNotExist(),
+                jsonPath("$.category.id").value(category.getId()),
+                jsonPath("$.category.name").value(CATEGORY_NAME)
             );
 
         mvc.perform(get("/questions/" + question3.getId()))
@@ -212,22 +239,41 @@ public class QuestionControllerTest {
     @WithUserDetails(TestSecurityConfig.ADMIN_UID)
     public void testShow_admin() throws Exception {
         // setup
-        Question question = new Question();
-        question.setUser(null);
-        question.setContent(QUESTION_CONTENT);
-        question.setPublished(false);
-        question = questionRepository.save(question);
+        User user = userRepository.findByUid(TestSecurityConfig.USER_UID);
+
+        // anonymous question
+        Question question1 = new Question();
+        question1.setUser(null);
+        question1.setContent(QUESTION_CONTENT);
+        question1.setPublished(false);
+        question1 = questionRepository.save(question1);
+
+        // not-anonymous unpublished question
+        Question question2 = new Question();
+        question2.setUser(user);
+        question2.setContact(QUESTION_CONTACT);
+        question2.setContent(QUESTION_CONTENT);
+        question2.setPublished(false);
+        question2 = questionRepository.save(question2);
 
         // flush transaction
         entityManager.flush();
         entityManager.clear();
 
         // verify
-        mvc.perform(get("/questions/" + question.getId()))
+        mvc.perform(get("/questions/" + question1.getId()))
             .andExpectAll(
                 status().isOk(),
-                jsonPath("$.id").value(question.getId()),
+                jsonPath("$.id").value(question1.getId()),
                 jsonPath("$.user").doesNotExist()
+            );
+
+        mvc.perform(get("/questions/" + question2.getId()))
+            .andExpectAll(
+                status().isOk(),
+                jsonPath("$.id").value(question2.getId()),
+                jsonPath("$.user.id").value(user.getId()),
+                jsonPath("$.contact").value(QUESTION_CONTACT)
             );
     }
 

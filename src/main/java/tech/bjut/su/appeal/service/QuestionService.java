@@ -12,10 +12,7 @@ import tech.bjut.su.appeal.dto.QuestionAnswerDto;
 import tech.bjut.su.appeal.dto.QuestionCreateDto;
 import tech.bjut.su.appeal.dto.QuestionIndexDto;
 import tech.bjut.su.appeal.entity.*;
-import tech.bjut.su.appeal.repository.AnswerLikeRepository;
-import tech.bjut.su.appeal.repository.AnswerRepository;
-import tech.bjut.su.appeal.repository.AttachmentRepository;
-import tech.bjut.su.appeal.repository.QuestionRepository;
+import tech.bjut.su.appeal.repository.*;
 import tech.bjut.su.appeal.security.ResourceAuthority;
 import tech.bjut.su.appeal.util.CursorPaginationHelper;
 import tech.bjut.su.appeal.util.SpecificationHelper;
@@ -29,6 +26,8 @@ import java.util.stream.Collectors;
 public class QuestionService {
     private final QuestionRepository repository;
 
+    private final QuestionCategoryRepository categoryRepository;
+
     private final AnswerRepository answerRepository;
 
     private final AnswerLikeRepository likeRepository;
@@ -39,12 +38,14 @@ public class QuestionService {
 
     public QuestionService(
         QuestionRepository repository,
+        QuestionCategoryRepository categoryRepository,
         AnswerRepository answerRepository,
         AnswerLikeRepository likeRepository,
         AttachmentRepository attachmentRepository,
         SecurityService securityService
     ) {
         this.repository = repository;
+        this.categoryRepository = categoryRepository;
         this.answerRepository = answerRepository;
         this.likeRepository = likeRepository;
         this.attachmentRepository = attachmentRepository;
@@ -108,6 +109,13 @@ public class QuestionService {
         question.setContact(StringUtils.stripToEmpty(dto.getContact()));
         question.setCampus(dto.getCampus());
         question.setContent(StringUtils.stripToEmpty(dto.getContent()));
+
+        if (dto.getCategoryId() != null) {
+            QuestionCategory category = categoryRepository.findById(dto.getCategoryId()).orElse(null);
+            question.setCategory(category);
+        } else {
+            question.setCategory(null);
+        }
 
         if (dto.getAttachmentIds() != null && !dto.getAttachmentIds().isEmpty()) {
             List<Attachment> existingAttachments = attachmentRepository.findAllById(dto.getAttachmentIds());
@@ -206,5 +214,9 @@ public class QuestionService {
             ResourceAuthority.ENTITY_NAME_QUESTION,
             String.valueOf(question.getId())
         ));
+    }
+
+    public List<QuestionCategory> getCategories() {
+        return categoryRepository.findAll();
     }
 }

@@ -1,10 +1,13 @@
 package tech.bjut.su.appeal.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import tech.bjut.su.appeal.enums.CampusEnum;
+import tech.bjut.su.appeal.repository.QuestionCategoryRepository;
+import tech.bjut.su.appeal.validation.EntityExists;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +20,10 @@ public class QuestionCreateDto {
 
     @Size(max = 255)
     private String name;
+
+    @JsonProperty("category")
+    @EntityExists(repository = QuestionCategoryRepository.class, message = "{question-category.not-found}")
+    private Long categoryId;
 
     @Size(max = 255)
     private String contact;
